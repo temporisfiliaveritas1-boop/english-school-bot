@@ -1,6 +1,7 @@
 # config.py
-# Замени значения на свои!
 
-BOT_TOKEN = "8829517028:AAEQL0rier_2AOtRXLnLkMXoYxqKNJlK-64"
-GROUP_ID  = -1003915437675              # ID твоей группы (отрицательное число)
-ADMIN_ID  = 640655818                   # твой личный Telegram ID
+import os
+
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+GROUP_ID  = int(os.environ.get("GROUP_ID"))
+ADMIN_ID  = int(os.environ.get("ADMIN_ID"))             # твой личный Telegram ID
