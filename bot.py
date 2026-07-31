@@ -349,25 +349,26 @@ async def get_meet_link(message: Message, state: FSMContext):
 async def admin_list_clubs(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    await callback.answer()
     clubs = db.get_active_clubs()
     if not clubs:
-        await callback.answer("Нет активных клубов", show_alert=True)
+        await callback.message.answer("Нет активных клубов")
         return
 
-    text = "📋 *Активные клубы:*\n\n"
     for c in clubs:
         registered = db.get_registered_count(c["id"])
         members = db.get_club_members(c["id"])
-        text += f"*{c['date']} {c['time']}* — {c['topic']} ({c['level']})\n"
-        text += f"👥 {registered}/{c['max_spots']} записано\n"
+        text = (
+            f"📅 {c['date']} {c['time']}\n"
+            f"💬 {c['topic']} ({c['level']})\n"
+            f"👥 {registered}/{c['max_spots']} записано\n"
+        )
         if members:
+            text += "\nУчастники:\n"
             for _, username, full_name in members:
                 uname = f"@{username}" if username else full_name
-                text += f"  • {full_name} ({uname})\n"
-        text += "\n"
-
-    await callback.message.answer(text, parse_mode="Markdown")
-    await callback.answer()
+                text += f"• {full_name} ({uname})\n"
+        await callback.message.answer(text)
 
 
 @dp.callback_query(F.data == "admin_notify")
