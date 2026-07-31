@@ -373,29 +373,70 @@ async def admin_list_clubs(callback: CallbackQuery):
 
 
 @dp.callback_query(F.data == "admin_notify")
-async def admin_notify(callback: CallbackQuery):
+async def admin_notify(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
     clubs = db.get_active_clubs()
-    total_sent = 0
-    for club in clubs:
-        members = db.get_club_members(club["id"])
-        for user_id, _, _ in members:
+    if not clubs:
+        await callback.answer("Нет активных клубов", show_alert=True)
+        return
+
+    text = "🔔 *Выбери клуб для напоминания:*\n\nВведи номер клуба:\n\n"
+    for c in clubs:
+        registered = db.get_registered_count(c["id"])
+        text += f"*{c['id']}* — {c['date']} {c['time']} | {c['topic']} ({c['level']}) | 👥 {registered} чел.\n"
+
+    await callback.message.answer(text, parse_mode="Markdown", reply_markup=cancel_kb())
+    await state.set_state(NotifyClub.club_id)
+    await callback.answer()
+
+
+@dp.message(NotifyClub.club_id)
+async def admin_notify_send(message: Message, state: FSMContext):
+    try:
+        club_id = int(message.text.strip())
+        club = db.get_club(club_id)
+        if not club:
+            await message.answer("Клуб не найден. Попробуй ещё раз.")
+            return
+
+        members = db.get_club_members(club_id)
+        if not members:
+            await state.clear()
+            await message.answer("На этот клуб никто не записан.", reply_markup=admin_menu_kb())
+            return
+
+        await state.clear()
+        sent = 0
+        names = []
+
+        for user_id, username, full_name in members:
             try:
                 await bot.send_message(
                     user_id,
-                    f"⏰ *Напоминание!*\n\n"
-                    f"Через час начинается Speaking Club!\n"
+                    f"⏰ Напоминание!\n\n"
+                    f"Скоро начинается Speaking Club!\n"
                     f"📅 {club['date']} в {club['time']}\n"
-                    f"💬 Тема: {club['topic']}\n\n"
-                    f"🔗 Ссылка: {club['meet_link']}",
-                    parse_mode="Markdown"
+                    f"💬 Тема: {club['topic']}\n"
+                    f"📊 Уровень: {club['level']}\n\n"
+                    f"🔗 Ссылка: {club['meet_link']}"
                 )
-                total_sent += 1
+                sent += 1
+                uname = f"@{username}" if username else full_name
+                names.append(f"• {full_name} ({uname})")
             except Exception:
                 pass
-    await callback.message.answer(f"✅ Напоминания отправлены: {total_sent} участникам")
-    await callback.answer()
+
+        members_text = "\n".join(names)
+        await message.answer(
+            f"✅ Напоминания отправлены!\n\n"
+            f"📅 {club['date']} {club['time']} — {club['topic']}\n"
+            f"👥 Отправлено: {sent} чел.\n\n"
+            f"Кому:\n{members_text}",
+            reply_markup=admin_menu_kb()
+        )
+    except ValueError:
+        await message.answer("Введи только цифру — номер клуба.")
 
 
 @dp.callback_query(F.data == "admin_students")
