@@ -8,7 +8,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from config import BOT_TOKEN, GROUP_ID, ADMIN_ID
+from config import BOT_TOKEN, GROUP_ID, ADMIN_ID, ADMIN_IDS
 from keyboards import (
     main_menu_kb, back_kb,
     clubs_kb, club_detail_kb, confirm_kb,
@@ -279,14 +279,14 @@ async def cancel_registration(message: Message):
 
 @dp.message(Command("admin"))
 async def admin_panel(message: Message):
-    if message.from_user.id != ADMIN_ID:
+    if message.from_user.id not in ADMIN_IDS:
         return
     await message.answer("⚙️ Панель управления:", reply_markup=admin_menu_kb())
 
 
 @dp.callback_query(F.data == "admin_create")
 async def admin_create_start(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         return
     await callback.message.answer("📅 Введи дату клуба\nНапример: 20 июня 2025", reply_markup=cancel_kb())
     await state.set_state(CreateClub.date)
@@ -347,7 +347,7 @@ async def get_meet_link(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data == "admin_list")
 async def admin_list_clubs(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         return
     clubs = db.get_active_clubs()
     if not clubs:
@@ -372,7 +372,7 @@ async def admin_list_clubs(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "admin_notify")
 async def admin_notify(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         return
     clubs = db.get_active_clubs()
     total_sent = 0
@@ -398,7 +398,7 @@ async def admin_notify(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "admin_students")
 async def admin_students(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         return
     students = db.get_all_students()
     text = f"👥 *Все ученики ({len(students)} чел.):*\n\n"
@@ -422,7 +422,7 @@ async def cancel_state(callback: CallbackQuery, state: FSMContext):
 
 @dp.callback_query(F.data == "admin_delete_club")
 async def admin_delete_start(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         return
     clubs = db.get_active_clubs()
     if not clubs:
@@ -482,7 +482,7 @@ async def admin_delete_confirm(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data == "admin_broadcast")
 async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         return
     await callback.message.answer(
         "📢 *Рассылка всем ученикам*\n\n"
@@ -525,7 +525,7 @@ async def admin_broadcast_send(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data == "admin_weekly_topic")
 async def admin_weekly_start(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         return
     await callback.message.answer(
         "📝 *Новая тема недели*\n\n"
@@ -554,7 +554,7 @@ async def admin_weekly_send(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data == "admin_stats")
 async def admin_stats(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         return
 
     stats = db.get_stats()
@@ -575,7 +575,7 @@ async def admin_stats(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "admin_close_clubs")
 async def admin_close_clubs(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         return
     clubs = db.get_active_clubs()
     if not clubs:
