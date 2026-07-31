@@ -48,6 +48,9 @@ class DeleteClub(StatesGroup):
     club_id = State()
 
 
+class NotifyClub(StatesGroup):
+    club_id = State()
+
 # ══════════════════════════════════════════════
 # ОНБОРДИНГ
 # ══════════════════════════════════════════════
