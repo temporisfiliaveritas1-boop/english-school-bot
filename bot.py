@@ -241,12 +241,13 @@ async def register_done(callback: CallbackQuery):
     registered = db.get_registered_count(club_id)
 
     await callback.message.edit_text(
-        f"✅ *Ты записана на Speaking Club!*\n\n"
+        f"🎉 Отлично, ты записана!\n\n"
         f"📅 {club['date']} в {club['time']}\n"
-        f"💬 Тема: {club['topic']}\n\n"
-        f"🔗 Ссылка на Google Meet придёт за час до начала.\n"
-        f"Чтобы отменить — напиши /cancel_{club_id}",
-        parse_mode="Markdown"
+        f"💬 Тема: {club['topic']}\n"
+        f"📊 Уровень: {club['level']}\n\n"
+        f"⏰ Я пришлю тебе напоминание и ссылку на Google Meet.\n"
+        f"Если захочешь отменить — напиши /cancel_{club_id}",
+        reply_markup=back_kb()
     )
     await bot.send_message(
         ADMIN_ID,
