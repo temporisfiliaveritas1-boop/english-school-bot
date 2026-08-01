@@ -14,7 +14,7 @@ from keyboards import (
     clubs_kb, club_detail_kb, confirm_kb,
     admin_menu_kb, cancel_kb
 )
-from messages import WELCOME_MSG, RULES_MSG, SCHEDULE_MSG, REFERRAL_MSG, CONTACTS_MSG
+from messages import WELCOME_MSG, RULES_MSG, SCHEDULE_MSG, CONTACTS_MSG
 from database import Database
 import sheets
 
