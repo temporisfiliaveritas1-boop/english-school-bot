@@ -176,12 +176,11 @@ async def show_contacts(callback: CallbackQuery):
 @dp.callback_query(F.data == "lessons")
 async def show_lessons(callback: CallbackQuery):
     await callback.message.edit_text(
-        "📚 *Lessons*\n\n"
+        "📚 Lessons\n\n"
         "We offer group and individual lessons!\n\n"
         "Interested? Write to our manager:\n"
         "@Tosha_petrolay\n\n"
         "She will help you choose the right format and schedule!",
-        parse_mode="Markdown",
         reply_markup=back_kb()
     )
     await callback.answer()
