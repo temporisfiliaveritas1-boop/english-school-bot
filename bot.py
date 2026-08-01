@@ -138,8 +138,8 @@ async def join_group(callback: CallbackQuery):
     await callback.message.edit_text(
         "👥 *Запись в группу*\n\n"
         "Для записи в группу напиши нашему менеджеру:\n"
-        "@manager_username\n\n"
-        "Он подберёт подходящую группу по твоему уровню и расписанию!",
+        "@Tosha_petrolay\n\n"
+        "Она подберёт подходящую группу по твоему уровню и расписанию!",
         parse_mode="Markdown",
         reply_markup=back_kb()
     )
@@ -152,8 +152,8 @@ async def individual_lessons(callback: CallbackQuery):
         "👤 *Индивидуальные уроки*\n\n"
         "Хочешь заниматься один на один с учителем?\n"
         "Напиши нашему менеджеру:\n"
-        "@manager_username\n\n"
-        "Он подберёт учителя под твои цели и уровень!",
+        "@Tosha_petrolay\n\n"
+        "Она подберёт учителя под твои цели и уровень!",
         parse_mode="Markdown",
         reply_markup=back_kb()
     )
