@@ -136,10 +136,10 @@ async def show_contacts(callback: CallbackQuery):
 @dp.callback_query(F.data == "join_group")
 async def join_group(callback: CallbackQuery):
     await callback.message.edit_text(
-        "👥 *Запись в группу*\n\n"
-        "Для записи в группу напиши нашему менеджеру:\n"
+        "👥 *Groups*\n\n"
+        "To join a group, write to our manager:\n"
         "@Tosha_petrolay\n\n"
-        "Она подберёт подходящую группу по твоему уровню и расписанию!",
+        "She will find the right group for your level and schedule!",
         parse_mode="Markdown",
         reply_markup=back_kb()
     )
@@ -149,11 +149,11 @@ async def join_group(callback: CallbackQuery):
 @dp.callback_query(F.data == "individual")
 async def individual_lessons(callback: CallbackQuery):
     await callback.message.edit_text(
-        "👤 *Индивидуальные уроки*\n\n"
-        "Хочешь заниматься один на один с учителем?\n"
-        "Напиши нашему менеджеру:\n"
+        "👤 *Individuals*\n\n"
+        "Want to study one on one with a teacher?\n"
+        "Write to our manager:\n"
         "@Tosha_petrolay\n\n"
-        "Она подберёт учителя под твои цели и уровень!",
+        "She will find the perfect teacher for your goals and level!",
         parse_mode="Markdown",
         reply_markup=back_kb()
     )
