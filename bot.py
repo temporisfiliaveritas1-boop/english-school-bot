@@ -66,7 +66,7 @@ async def new_member(event: ChatMemberUpdated):
         return
 
     db.add_student(user.id, user.username or "", user.full_name)
-sheets.add_student(message.from_user.id, message.from_user.username or "", message.from_user.full_name)
+    sheets.add_student(user.id, user.username or "", user.full_name)
 
     await bot.send_message(
         ADMIN_ID,
