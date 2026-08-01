@@ -16,6 +16,7 @@ from keyboards import (
 )
 from messages import WELCOME_MSG, RULES_MSG, SCHEDULE_MSG, REFERRAL_MSG, CONTACTS_MSG
 from database import Database
+import sheets
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ async def new_member(event: ChatMemberUpdated):
         return
 
     db.add_student(user.id, user.username or "", user.full_name)
+sheets.add_student(message.from_user.id, message.from_user.username or "", message.from_user.full_name)
 
     await bot.send_message(
         ADMIN_ID,
