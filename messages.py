@@ -58,10 +58,10 @@ CONTACTS_MSG = """
 💬 *Contact us*
 
 👩‍🏫 *Teacher / curator:*
-@your_username
+@lexavorobey / @eseniia_no
 
 📞 *Manager:*
-@manager_username
+@Tosha_petrolay
 
 🕐 Response within 24 hours on weekdays.
 """
