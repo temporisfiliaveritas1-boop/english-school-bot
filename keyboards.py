@@ -13,8 +13,7 @@ def main_menu_kb() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🎤 Speaking Club", callback_data="show_clubs"),
         ],
         [
-            InlineKeyboardButton(text="👥 Group Lessons", callback_data="join_group"),
-            InlineKeyboardButton(text="👤 Individual Lessons", callback_data="individual"),
+            InlineKeyboardButton(text="📚 Lessons", callback_data="lessons"),
         ],
         [
             InlineKeyboardButton(text="💬 Contact us", callback_data="contacts"),
