@@ -21,12 +21,16 @@ class Database:
                     joined_at   TEXT
                 )
             """)
-            # Рефералы
+            # Анкеты учеников
             conn.execute("""
-                CREATE TABLE IF NOT EXISTS referrals (
-                    new_user_id  INTEGER PRIMARY KEY,
-                    referrer_id  INTEGER,
-                    created_at   TEXT
+                CREATE TABLE IF NOT EXISTS student_profiles (
+                    user_id      INTEGER PRIMARY KEY,
+                    first_name   TEXT,
+                    last_name    TEXT,
+                    phone        TEXT,
+                    email        TEXT,
+                    how_found    TEXT,
+                    registered_at TEXT
                 )
             """)
             # Speaking Club
@@ -72,25 +76,31 @@ class Database:
         with self._conn() as conn:
             return conn.execute("SELECT user_id, username, full_name FROM students").fetchall()
 
-    # ── Рефералы ──
-    def add_referral(self, new_user_id, referrer_id):
-        with self._conn() as conn:
-            conn.execute("""
-                INSERT OR IGNORE INTO referrals (new_user_id, referrer_id, created_at)
-                VALUES (?, ?, ?)
-            """, (new_user_id, referrer_id, datetime.now().isoformat()))
-
-    def referral_exists(self, user_id):
+    # ── Анкеты учеников ──
+    def has_profile(self, user_id):
         with self._conn() as conn:
             return conn.execute(
-                "SELECT 1 FROM referrals WHERE new_user_id=?", (user_id,)
+                "SELECT 1 FROM student_profiles WHERE user_id=?", (user_id,)
             ).fetchone() is not None
 
-    def get_referral_count(self, referrer_id):
+    def add_profile(self, user_id, first_name, last_name, phone, email, how_found):
         with self._conn() as conn:
-            return conn.execute(
-                "SELECT COUNT(*) FROM referrals WHERE referrer_id=?", (referrer_id,)
-            ).fetchone()[0]
+            conn.execute("""
+                INSERT OR IGNORE INTO student_profiles
+                (user_id, first_name, last_name, phone, email, how_found, registered_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (user_id, first_name, last_name, phone, email, how_found, datetime.now().isoformat()))
+
+    def count_profiles(self):
+        with self._conn() as conn:
+            return conn.execute("SELECT COUNT(*) FROM student_profiles").fetchone()[0]
+
+    def get_all_profiles(self):
+        with self._conn() as conn:
+            return conn.execute("""
+                SELECT user_id, first_name, last_name, phone, email, how_found, registered_at
+                FROM student_profiles
+            """).fetchall()
 
     # ── Speaking Club ──
     def create_club(self, date, time, topic, level, meet_link, max_spots=8):
@@ -167,12 +177,12 @@ class Database:
     def get_stats(self) -> dict:
         with self._conn() as conn:
             students = conn.execute("SELECT COUNT(*) FROM students").fetchone()[0]
+            profiles = conn.execute("SELECT COUNT(*) FROM student_profiles").fetchone()[0]
             active_clubs = conn.execute("SELECT COUNT(*) FROM clubs WHERE active=1").fetchone()[0]
             total_reg = conn.execute("SELECT COUNT(*) FROM registrations").fetchone()[0]
-            referrals = conn.execute("SELECT COUNT(*) FROM referrals").fetchone()[0]
             return {
                 "students": students,
+                "profiles": profiles,
                 "active_clubs": active_clubs,
                 "total_registrations": total_reg,
-                "referrals": referrals
             }

@@ -1,15 +1,21 @@
 # messages.py
-# Все тексты бота — редактируй здесь!
-
 WELCOME_MSG = """
-👋 Hi, {name}! Welcome to our English course!
+👋 Hi, {name}! Welcome to our English Club!
 
 I'm your assistant bot. Here you'll find everything you need:
 
 📋 Rules of our community
 📅 Schedule of lessons and clubs
 🎤 Speaking Club registration
-🔗 Invite a friend and get a bonus
+👥 Group & Individual lessons
+
+Choose what interests you 👇
+"""
+
+WELCOME_NEW_MSG = """
+👋 Hi, {name}! Welcome to our English Club!
+
+Before you start, please take a moment to register as a student — it helps us know you better!
 
 Choose what interests you 👇
 """
@@ -52,4 +58,12 @@ CONTACTS_MSG = """
 @Tosha_petrolay
 
 🕐 Response within 24 hours on weekdays.
+"""
+
+REGISTER_START_MSG = """
+✍️ *Student Registration*
+
+Please answer a few questions — it takes less than a minute!
+
+First, enter your *first name*:
 """
