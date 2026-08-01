@@ -25,6 +25,9 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 db = Database()
 
+@dp.message(F.message_thread_id)
+async def debug_thread(message: Message):
+    await message.answer(f"Thread ID: {message.message_thread_id}")
 
 # ══════════════════════════════════════════════
 # FSM — создание Speaking Club (для админа)
