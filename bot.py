@@ -249,13 +249,14 @@ async def register_done(callback: CallbackQuery):
         f"Если захочешь отменить — напиши /cancel_{club_id}",
         reply_markup=back_kb()
     )
-    await bot.send_message(
-        ADMIN_ID,
-        f"🆕 Запись на Speaking Club!\n"
-        f"👤 {user.full_name} (@{user.username})\n"
-        f"📅 {club['date']} {club['time']} — {club['topic']}\n"
-        f"👥 Записано: {registered}/{club['max_spots']}"
-    )
+    for admin_id in ADMIN_IDS:
+            await bot.send_message(
+                admin_id,
+                f"🆕 Запись на Speaking Club!\n"
+                f"👤 {user.full_name} (@{user.username})\n"
+                f"📅 {club['date']} {club['time']} — {club['topic']}\n"
+                f"👥 Записано: {registered}/{club['max_spots']}"
+            )
     await callback.answer()
 
 
