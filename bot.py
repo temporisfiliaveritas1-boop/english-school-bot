@@ -132,6 +132,32 @@ async def show_schedule(callback: CallbackQuery):
 async def show_contacts(callback: CallbackQuery):
     await callback.message.edit_text(CONTACTS_MSG, parse_mode="Markdown", reply_markup=back_kb())
     await callback.answer()
+    
+@dp.callback_query(F.data == "join_group")
+async def join_group(callback: CallbackQuery):
+    await callback.message.edit_text(
+        "👥 *Запись в группу*\n\n"
+        "Для записи в группу напиши нашему менеджеру:\n"
+        "@manager_username\n\n"
+        "Он подберёт подходящую группу по твоему уровню и расписанию!",
+        parse_mode="Markdown",
+        reply_markup=back_kb()
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "individual")
+async def individual_lessons(callback: CallbackQuery):
+    await callback.message.edit_text(
+        "👤 *Индивидуальные уроки*\n\n"
+        "Хочешь заниматься один на один с учителем?\n"
+        "Напиши нашему менеджеру:\n"
+        "@manager_username\n\n"
+        "Он подберёт учителя под твои цели и уровень!",
+        parse_mode="Markdown",
+        reply_markup=back_kb()
+    )
+    await callback.answer()
 
 
 @dp.callback_query(F.data == "referral")
