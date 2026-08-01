@@ -42,18 +42,6 @@ SCHEDULE_MSG = """
 📢 *Webinars* — announced in advance
 """
 
-REFERRAL_MSG = """
-🔗 *Invite a friend — get a bonus!*
-
-Your personal link:
-{link}
-
-Every friend who joins = reward 🎁
-Every 3 referrals = *bonus lesson!*
-
-Your referrals: *{count}* people
-"""
-
 CONTACTS_MSG = """
 💬 *Contact us*
 
