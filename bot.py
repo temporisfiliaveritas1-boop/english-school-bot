@@ -244,6 +244,8 @@ async def register_done(callback: CallbackQuery):
     db.register(user.id, user.username or "", user.full_name, club_id)
     club = db.get_club(club_id)
     registered = db.get_registered_count(club_id)
+sheets.add_registration(user.id, user.username or "", user.full_name, club_id, club["date"], club["time"], club["topic"])
+
 
     await callback.message.edit_text(
         f"🎉 Отлично, ты записана!\n\n"
@@ -337,6 +339,7 @@ async def get_meet_link(message: Message, state: FSMContext):
         topic=data["topic"], level=data["level"],
         meet_link=message.text, max_spots=8
     )
+    sheets.add_club(club_id, data["date"], data["time"], data["topic"], data["level"])
 
     announce = (
         f"🎤 *Новый Speaking Club!*\n\n"
