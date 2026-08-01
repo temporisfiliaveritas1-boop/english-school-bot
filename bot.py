@@ -244,7 +244,7 @@ async def register_done(callback: CallbackQuery):
     db.register(user.id, user.username or "", user.full_name, club_id)
     club = db.get_club(club_id)
     registered = db.get_registered_count(club_id)
-sheets.add_registration(user.id, user.username or "", user.full_name, club_id, club["date"], club["time"], club["topic"])
+    sheets.add_registration(user.id, user.username or "", user.full_name, club_id, club["date"], club["time"], club["topic"])
 
 
     await callback.message.edit_text(
