@@ -159,39 +159,6 @@ async def individual_lessons(callback: CallbackQuery):
     )
     await callback.answer()
 
-
-@dp.callback_query(F.data == "referral")
-async def show_referral(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    bot_info = await bot.get_me()
-    ref_link = f"https://t.me/{bot_info.username}?start={user_id}"
-    ref_count = db.get_referral_count(user_id)
-    await callback.message.edit_text(
-        REFERRAL_MSG.format(link=ref_link, count=ref_count),
-        parse_mode="Markdown",
-        reply_markup=back_kb(),
-        disable_web_page_preview=True
-    )
-    await callback.answer()
-
-
-async def process_referral(new_user_id: int, ref_id: str):
-    try:
-        referrer_id = int(ref_id)
-        if referrer_id == new_user_id or db.referral_exists(new_user_id):
-            return
-        db.add_referral(new_user_id, referrer_id)
-        ref_count = db.get_referral_count(referrer_id)
-        bonus = "\n🎁 Ты получил бонусный урок!" if ref_count % 3 == 0 else ""
-        await bot.send_message(
-            referrer_id,
-            f"🎉 По твоей ссылке пришёл новый ученик!\n"
-            f"Всего приглашено: {ref_count} чел.{bonus}"
-        )
-    except Exception as e:
-        logger.error(f"Referral error: {e}")
-
-
 # ══════════════════════════════════════════════
 # SPEAKING CLUB — ученик
 # ══════════════════════════════════════════════
