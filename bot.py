@@ -91,16 +91,20 @@ async def new_member(event: ChatMemberUpdated):
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
-    """/start — запуск бота"""
-    args = message.text.split()
-    if len(args) > 1:
-        await process_referral(message.from_user.id, args[1])
+    # Если команда написана в группе — перенаправляем в личку
+    if message.chat.type != "private":
+        bot_info = await bot.get_me()
+        await message.reply(
+            f"👋 Привет! Напиши мне в личку 👉 @{bot_info.username}"
+        )
+        return
 
     db.add_student(
         message.from_user.id,
         message.from_user.username or "",
         message.from_user.full_name
     )
+    sheets.add_student(message.from_user.id, message.from_user.username or "", message.from_user.full_name)
     await message.answer(
         WELCOME_MSG.format(name=message.from_user.first_name),
         reply_markup=main_menu_kb()
