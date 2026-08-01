@@ -173,27 +173,14 @@ async def show_contacts(callback: CallbackQuery):
     await callback.answer()
 
 
-@dp.callback_query(F.data == "join_group")
-async def join_group(callback: CallbackQuery):
+@dp.callback_query(F.data == "lessons")
+async def show_lessons(callback: CallbackQuery):
     await callback.message.edit_text(
-        "👥 *Group Lessons*\n\n"
-        "To join a group, write to our manager:\n"
+        "📚 *Lessons*\n\n"
+        "We offer group and individual lessons!\n\n"
+        "Interested? Write to our manager:\n"
         "@Tosha_petrolay\n\n"
-        "She will find the right group for your level and schedule!",
-        parse_mode="Markdown",
-        reply_markup=back_kb()
-    )
-    await callback.answer()
-
-
-@dp.callback_query(F.data == "individual")
-async def individual_lessons(callback: CallbackQuery):
-    await callback.message.edit_text(
-        "👤 *Individual Lessons*\n\n"
-        "Want to study one on one with a teacher?\n"
-        "Write to our manager:\n"
-        "@Tosha_petrolay\n\n"
-        "She will find the perfect teacher for your goals and level!",
+        "She will help you choose the right format and schedule!",
         parse_mode="Markdown",
         reply_markup=back_kb()
     )
