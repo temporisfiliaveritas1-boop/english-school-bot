@@ -195,8 +195,8 @@ async def go_back(callback: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query(F.data == "rules")
-async def show_rules(callback: CallbackQuery):
-    await callback.message.edit_text(RULES_MSG, parse_mode="Markdown", reply_markup=back_kb())
+async def show_schedule(callback: CallbackQuery):
+    await callback.message.edit_text(RULES_MSG, reply_markup=back_kb())
     await callback.answer()
 
 
