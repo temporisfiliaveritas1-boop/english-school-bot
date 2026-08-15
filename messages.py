@@ -55,9 +55,9 @@ SCHEDULE_MSG = """
 """
 
 CONTACTS_MSG = """
-💬 *Contact us*
+💬 Contact us
 
-👩‍🏫 *Teacher / curator*
+👩‍🏫 Teacher / curator
 @lexavorobey / @Tosha_petrolay
 
 🕐 Response within 24 hours on weekdays.
