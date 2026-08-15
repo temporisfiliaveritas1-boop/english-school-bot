@@ -58,10 +58,7 @@ CONTACTS_MSG = """
 💬 *Contact us*
 
 👩‍🏫 *Teacher / curator*
-@lexavorobey / @eseniia_no
-
-📞 *Manager*
-@Tosha_petrolay
+@lexavorobey / @Tosha_petrolay
 
 🕐 Response within 24 hours on weekdays.
 """
