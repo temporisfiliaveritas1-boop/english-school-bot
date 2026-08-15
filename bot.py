@@ -208,7 +208,7 @@ async def show_schedule(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "contacts")
 async def show_contacts(callback: CallbackQuery):
-    await callback.message.edit_text(CONTACTS_MSG, parse_mode="Markdown", reply_markup=back_kb())
+    await callback.message.edit_text(CONTACTS_MSG, reply_markup=back_kb())
     await callback.answer()
 
 
