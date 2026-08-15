@@ -23,29 +23,31 @@ Choose what interests you 👇
 RULES_MSG = """
 📋 *Community Rules*
 
-🇬🇧 *Language* — we write in English in the chat. Mistakes are okay!
+🇬🇧 *Language* — язык всех чатов - английский, исключение *Chatting* — флудилка.
 
-🤝 *Respect* — we support each other, no criticism.
+🤝 *Respect* — никакой критики, исправлений друг друга. Уважение — основа любого общения.
 
-📵 *No spam* — no ads or off-topic links.
+📵 *No spam* — без спама в рабочих темах, например, в чатах *Let's discuss*.Там наши преподаватели читают Ваши ответы и стараются помочь в изучении английского. 
 
-✍️ *Activity* — try to write at least once a week in the discussion topic.
+✍️ *Activity* — Ваша активность в чате = Ваши результаты. Заходите каждый день в клуб хотя бы на 15-20 минут, попрактиковать разные навыки.
 
-💬 *Questions* — always welcome!
+💬 *Questions* — always welcome! You can write to @Tosha_petrolay or @lexa_vorobey. 
 """
 
 SCHEDULE_MSG = """
-📅 *Lesson Schedule*
 
-🗓 *Monday* — new discussion topic in the group chat
-✍️ *All week* — write, discuss, practice!
+👩‍💻*Everyday* — новые темы для обсуждения, язык - английский, название чатов: Let's discuss. Обратите внимание на уровень! Присоединяйтесь в любое время в течении дня к обсуждению, ставьте этот эмоджи 👀 и преподватель отправит фидбек в личные сообщения.
+✍️ *Monday\Wednesday* — тренируй восприятие английского на слух с помощью Song Quiz. 
+👻 *Cinema club* - заранее объявляем фильм на неделю, а для обсуждения встречаемся на выходных. Не забудьте воспользоваться Vocab list с полезными словами и выражениями!
+📚 *Book club* - каждую среду новый рассказ\ история, раз в две недели встречаемся на обсуждение на выходных. Не забудьте воспользоваться Vocab list с полезными словами и выражениями!
 
-🎤 *Speaking Club* — weekly (dates announced in the channel)
-   • Duration: 60 min
-   • Platform: Google Meet
+🎤 *Speaking Clubs* — 3-4 раза в неделю. Следите за уведомлениями, чтобы успеть записаться. Обратите внимание на уровень разговорного клуба. Не забудьте воспользоваться Vocab list с полезными словами и выражениями!
+   • Duration: ~ 60 min
+   • Platform: Yandex Telemost \ Zoom 
    • Max: 8 participants
 
-📢 *Webinars* — announced in advance
+📢 *Webinars* — вебинары с приглашенными гостями - объявляются заранее, запись проходит через менеджера или в общей группе. 
+🎙️ *Chatting* — чат для повседневного общения, едиственное место в группе, где можно общаться на русском. 
 """
 
 CONTACTS_MSG = """
