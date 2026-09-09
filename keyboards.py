@@ -22,7 +22,6 @@ def main_menu_kb() -> InlineKeyboardMarkup:
 
 
 def main_menu_with_register_kb() -> InlineKeyboardMarkup:
-    """Меню со кнопкой регистрации — показывается только один раз при старте"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="✍️ Register as a student", callback_data="register_student"),
@@ -98,16 +97,25 @@ def confirm_kb(club_id: int) -> InlineKeyboardMarkup:
 # ── Админ ──
 def admin_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
+        # Speaking Club
         [InlineKeyboardButton(text="➕ Create Speaking Club", callback_data="admin_create")],
         [InlineKeyboardButton(text="📋 Clubs & participants", callback_data="admin_list")],
         [InlineKeyboardButton(text="🔔 Send reminders", callback_data="admin_notify")],
+        [InlineKeyboardButton(text="✅ Mark attendance", callback_data="admin_attendance")],
+        [InlineKeyboardButton(text="❌ Cancel club", callback_data="admin_delete_club")],
+        [InlineKeyboardButton(text="🔒 Close all clubs", callback_data="admin_close_clubs")],
+        # Ученики
         [InlineKeyboardButton(text="👥 Student list", callback_data="admin_students")],
         [InlineKeyboardButton(text="📋 Student profiles", callback_data="admin_profiles")],
-        [InlineKeyboardButton(text="❌ Cancel club", callback_data="admin_delete_club")],
-        [InlineKeyboardButton(text="📢 Broadcast to all students", callback_data="admin_broadcast")],
+        # Сообщения
+        [InlineKeyboardButton(text="📢 Broadcast to all", callback_data="admin_broadcast")],
+        [InlineKeyboardButton(text="✉️ Message a student", callback_data="admin_message_student")],
+        [InlineKeyboardButton(text="👥 Message a cohort", callback_data="admin_message_cohort")],
+        # Контент
         [InlineKeyboardButton(text="📝 New weekly topic", callback_data="admin_weekly_topic")],
+        # Аналитика
         [InlineKeyboardButton(text="📊 Statistics", callback_data="admin_stats")],
-        [InlineKeyboardButton(text="✅ Close all clubs", callback_data="admin_close_clubs")],
+        [InlineKeyboardButton(text="📈 Weekly report", callback_data="admin_weekly_report")],
     ])
 
 
