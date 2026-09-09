@@ -7,6 +7,7 @@ from aiogram.filters import CommandStart, Command, ChatMemberUpdatedFilter, JOIN
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from config import BOT_TOKEN, GROUP_ID, ADMIN_ID, ADMIN_IDS
 from config import SPEAKING_CLUB_THREAD_ID, CHATTING_THREAD_ID, UPDATES_THREAD_ID
@@ -28,18 +29,15 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 db = Database()
 
-@dp.message(F.message_thread_id)
-async def debug_thread(message: Message):
-    await message.answer(f"Thread ID: {message.message_thread_id}")
+# Топики для отслеживания активности
+ACTIVITY_THREADS = [362, 6, 120]
 
 # ══════════════════════════════════════════════
-# МОДЕРАЦИЯ ЧАТА
+# МОДЕРАЦИЯ + СЧЁТЧИК АКТИВНОСТИ
 # ══════════════════════════════════════════════
 
 BANNED_WORDS = [
-    # Спам
     "spam", "реклама", "казино", "крипта", "заработок",
-    # Хейт спич
     "суки", "твари", "блять", "блядь", "сука", "тварь",
     "suki", "blyad", "tvar",
 ]
@@ -48,28 +46,41 @@ MODERATED_THREADS = [CHATTING_THREAD_ID, FEEDBACK_THREAD_ID]
 
 
 @dp.message(F.chat.id == GROUP_ID)
-async def moderate_message(message: Message):
-    if message.message_thread_id not in MODERATED_THREADS:
-        return
-    if message.from_user.id in ADMIN_IDS:
-        return
-    if not message.text:
+async def handle_group_message(message: Message):
+    if not message.from_user or message.from_user.is_bot:
         return
 
-    text_lower = message.text.lower()
-    for word in BANNED_WORDS:
-        if word.lower() in text_lower:
-            try:
-                await message.delete()
-                await bot.send_message(
-                    message.from_user.id,
-                    "⚠️ Your message was deleted.\n\n"
-                    "Please keep the conversation respectful and on-topic.\n"
-                    "If you have questions, contact @Tosha_petrolay"
-                )
-            except Exception:
-                pass
+    thread_id = message.message_thread_id
+
+    # Считаем активность в нужных топиках
+    if thread_id in ACTIVITY_THREADS:
+        db.record_topic_activity(
+            message.from_user.id,
+            message.from_user.username or "",
+            message.from_user.full_name,
+            thread_id
+        )
+
+    # Модерация
+    if thread_id in MODERATED_THREADS:
+        if message.from_user.id in ADMIN_IDS:
             return
+        if not message.text:
+            return
+        text_lower = message.text.lower()
+        for word in BANNED_WORDS:
+            if word.lower() in text_lower:
+                try:
+                    await message.delete()
+                    await bot.send_message(
+                        message.from_user.id,
+                        "Your message was deleted.\n\n"
+                        "Please keep the conversation respectful and on-topic.\n"
+                        "If you have questions, contact @Tosha_petrolay"
+                    )
+                except Exception:
+                    pass
+                return
 
 
 # ══════════════════════════════════════════════
@@ -82,22 +93,17 @@ class CreateClub(StatesGroup):
     level = State()
     meet_link = State()
 
-
 class Broadcast(StatesGroup):
     text = State()
-
 
 class WeeklyTopic(StatesGroup):
     text = State()
 
-
 class DeleteClub(StatesGroup):
     club_id = State()
 
-
 class NotifyClub(StatesGroup):
     club_id = State()
-
 
 class StudentRegister(StatesGroup):
     first_name = State()
@@ -107,6 +113,18 @@ class StudentRegister(StatesGroup):
     how_found = State()
     how_found_other = State()
     consent = State()
+
+class MessageStudent(StatesGroup):
+    username = State()
+    text = State()
+
+class MessageCohort(StatesGroup):
+    cohort = State()
+    text = State()
+
+class MarkAttendance(StatesGroup):
+    club_id = State()
+    marking = State()
 
 
 # ══════════════════════════════════════════════
@@ -143,8 +161,7 @@ async def new_member(event: ChatMemberUpdated):
     except Exception:
         await bot.send_message(
             GROUP_ID,
-            f"👋 {user.mention_html()}, welcome! "
-            f"Write to me in private 👉 /start",
+            f"👋 {user.mention_html()}, welcome! Write to me in private 👉 /start",
             parse_mode="HTML"
         )
 
@@ -156,28 +173,14 @@ async def cmd_start(message: Message):
         await message.reply(f"👋 Hi! Write to me in private 👉 @{bot_info.username}")
         return
 
-    db.add_student(
-        message.from_user.id,
-        message.from_user.username or "",
-        message.from_user.full_name
-    )
-    sheets.add_student(
-        message.from_user.id,
-        message.from_user.username or "",
-        message.from_user.full_name
-    )
+    db.add_student(message.from_user.id, message.from_user.username or "", message.from_user.full_name)
+    sheets.add_student(message.from_user.id, message.from_user.username or "", message.from_user.full_name)
 
     has_profile = db.has_profile(message.from_user.id)
     if has_profile:
-        await message.answer(
-            WELCOME_MSG.format(name=message.from_user.first_name),
-            reply_markup=main_menu_kb()
-        )
+        await message.answer(WELCOME_MSG.format(name=message.from_user.first_name), reply_markup=main_menu_kb())
     else:
-        await message.answer(
-            WELCOME_NEW_MSG.format(name=message.from_user.first_name),
-            reply_markup=main_menu_with_register_kb()
-        )
+        await message.answer(WELCOME_NEW_MSG.format(name=message.from_user.first_name), reply_markup=main_menu_with_register_kb())
 
 
 @dp.callback_query(F.data == "back")
@@ -185,27 +188,21 @@ async def go_back(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     has_profile = db.has_profile(callback.from_user.id)
     if has_profile:
-        await callback.message.edit_text(
-            WELCOME_MSG.format(name=callback.from_user.first_name),
-            reply_markup=main_menu_kb()
-        )
+        await callback.message.edit_text(WELCOME_MSG.format(name=callback.from_user.first_name), reply_markup=main_menu_kb())
     else:
-        await callback.message.edit_text(
-            WELCOME_NEW_MSG.format(name=callback.from_user.first_name),
-            reply_markup=main_menu_with_register_kb()
-        )
+        await callback.message.edit_text(WELCOME_NEW_MSG.format(name=callback.from_user.first_name), reply_markup=main_menu_with_register_kb())
     await callback.answer()
 
 
 @dp.callback_query(F.data == "rules")
-async def show_schedule(callback: CallbackQuery):
+async def show_rules(callback: CallbackQuery):
     await callback.message.edit_text(RULES_MSG, reply_markup=back_kb())
     await callback.answer()
 
 
 @dp.callback_query(F.data == "schedule")
 async def show_schedule(callback: CallbackQuery):
-    await callback.message.edit_text(SCHEDULE_MSG, parse_mode="Markdown", reply_markup=back_kb())
+    await callback.message.edit_text(SCHEDULE_MSG, reply_markup=back_kb())
     await callback.answer()
 
 
@@ -219,10 +216,13 @@ async def show_contacts(callback: CallbackQuery):
 async def show_lessons(callback: CallbackQuery):
     await callback.message.edit_text(
         "📚 Lessons\n\n"
-        "We offer group and individual lessons!\n\n"
-        "Interested? Write to our manager:\n"
-        "@Tosha_petrolay\n\n"
-        "She will help you choose the right format and schedule!",
+        "We offer lessons for all levels:\n\n"
+        "👥 Group lessons: A1, A2, B1, B2, C1\n"
+        "👤 Individual lessons: any level and goal\n"
+        "📝 Exam prep: OGE, EGE\n"
+        "🎓 IELTS preparation\n\n"
+        "Write to our manager to find the right option:\n"
+        "@Tosha_petrolay",
         reply_markup=back_kb()
     )
     await callback.answer()
@@ -237,7 +237,7 @@ async def register_student_start(callback: CallbackQuery, state: FSMContext):
     if db.has_profile(callback.from_user.id):
         await callback.answer("You have already registered!", show_alert=True)
         return
-    await callback.message.edit_text(REGISTER_START_MSG, parse_mode="Markdown")
+    await callback.message.edit_text(REGISTER_START_MSG)
     await state.set_state(StudentRegister.first_name)
     await callback.answer()
 
@@ -245,42 +245,34 @@ async def register_student_start(callback: CallbackQuery, state: FSMContext):
 @dp.message(StudentRegister.first_name)
 async def reg_first_name(message: Message, state: FSMContext):
     await state.update_data(first_name=message.text.strip())
-    await message.answer("Great! Now enter your *last name*:", parse_mode="Markdown")
+    await message.answer("Great! Now enter your last name:")
     await state.set_state(StudentRegister.last_name)
 
 
 @dp.message(StudentRegister.last_name)
 async def reg_last_name(message: Message, state: FSMContext):
     await state.update_data(last_name=message.text.strip())
-    await message.answer("Your *phone number* (e.g. +7 999 123 45 67):", parse_mode="Markdown")
+    await message.answer("Your phone number (e.g. +7 999 123 45 67):")
     await state.set_state(StudentRegister.phone)
 
 
 @dp.message(StudentRegister.phone)
 async def reg_phone(message: Message, state: FSMContext):
     await state.update_data(phone=message.text.strip())
-    await message.answer("Your *email address*:", parse_mode="Markdown")
+    await message.answer("Your email address:")
     await state.set_state(StudentRegister.email)
 
 
 @dp.message(StudentRegister.email)
 async def reg_email(message: Message, state: FSMContext):
     await state.update_data(email=message.text.strip())
-    await message.answer(
-        "How did you hear about us?",
-        reply_markup=how_found_kb()
-    )
+    await message.answer("How did you hear about us?", reply_markup=how_found_kb())
     await state.set_state(StudentRegister.how_found)
 
 
 @dp.callback_query(StudentRegister.how_found, F.data.startswith("found_"))
 async def reg_how_found(callback: CallbackQuery, state: FSMContext):
-    options = {
-        "found_ad": "Advertisement",
-        "found_friends": "Friends",
-        "found_teacher": "Teacher",
-        "found_other": None
-    }
+    options = {"found_ad": "Advertisement", "found_friends": "Friends", "found_teacher": "Teacher", "found_other": None}
     choice = options.get(callback.data)
     if choice is None:
         await callback.message.edit_text("Please write how you heard about us:")
@@ -300,14 +292,14 @@ async def reg_how_found_other(message: Message, state: FSMContext):
 async def show_consent(message_or_obj, state: FSMContext):
     text = (
         "Almost done!\n\n"
-        "By clicking *I agree*, you consent to the processing of your personal data "
+        "By clicking I agree, you consent to the processing of your personal data "
         "(name, phone, email) for the purpose of organizing English classes.\n\n"
         "Your data will not be shared with third parties."
     )
     if hasattr(message_or_obj, 'edit_text'):
-        await message_or_obj.edit_text(text, parse_mode="Markdown", reply_markup=consent_kb())
+        await message_or_obj.edit_text(text, reply_markup=consent_kb())
     else:
-        await message_or_obj.answer(text, parse_mode="Markdown", reply_markup=consent_kb())
+        await message_or_obj.answer(text, reply_markup=consent_kb())
     await state.set_state(StudentRegister.consent)
 
 
@@ -315,42 +307,30 @@ async def show_consent(message_or_obj, state: FSMContext):
 async def reg_consent(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     await state.clear()
-
     user = callback.from_user
-    db.add_profile(
-        user_id=user.id,
-        first_name=data.get("first_name", ""),
-        last_name=data.get("last_name", ""),
-        phone=data.get("phone", ""),
-        email=data.get("email", ""),
-        how_found=data.get("how_found", "")
-    )
-    sheets.update_student_profile(
-        user_id=user.id,
-        first_name=data.get("first_name", ""),
-        last_name=data.get("last_name", ""),
-        phone=data.get("phone", ""),
-        email=data.get("email", ""),
-        how_found=data.get("how_found", "")
-    )
+
+    db.add_profile(user_id=user.id, first_name=data.get("first_name", ""),
+                   last_name=data.get("last_name", ""), phone=data.get("phone", ""),
+                   email=data.get("email", ""), how_found=data.get("how_found", ""))
+    sheets.update_student_profile(user_id=user.id, first_name=data.get("first_name", ""),
+                                   last_name=data.get("last_name", ""), phone=data.get("phone", ""),
+                                   email=data.get("email", ""), how_found=data.get("how_found", ""))
 
     for admin_id in ADMIN_IDS:
         try:
-            await bot.send_message(
-                admin_id,
+            await bot.send_message(admin_id,
                 f"New student profile!\n\n"
-                f"👤 {data.get('first_name')} {data.get('last_name')}\n"
-                f"📱 {data.get('phone')}\n"
-                f"📧 {data.get('email')}\n"
-                f"📢 Found us via: {data.get('how_found')}\n"
+                f"Name: {data.get('first_name')} {data.get('last_name')}\n"
+                f"Phone: {data.get('phone')}\n"
+                f"Email: {data.get('email')}\n"
+                f"Found us via: {data.get('how_found')}\n"
                 f"TG: @{user.username or user.full_name}"
             )
         except Exception:
             pass
 
     await callback.message.edit_text(
-        "Registration complete!\n\n"
-        "Welcome to our English Club! Now you have access to all features.",
+        "Registration complete!\n\nWelcome to our English Club!",
         reply_markup=main_menu_kb()
     )
     await callback.answer()
@@ -364,15 +344,9 @@ async def reg_consent(callback: CallbackQuery, state: FSMContext):
 async def show_clubs(callback: CallbackQuery):
     clubs = db.get_active_clubs()
     if not clubs:
-        await callback.message.edit_text(
-            "No Speaking Clubs available right now.\nFollow the announcements in the group!",
-            reply_markup=back_kb()
-        )
+        await callback.message.edit_text("No Speaking Clubs available right now.\nFollow the announcements in the group!", reply_markup=back_kb())
     else:
-        await callback.message.edit_text(
-            "Choose a Speaking Club:",
-            reply_markup=clubs_kb(clubs)
-        )
+        await callback.message.edit_text("Choose a Speaking Club:", reply_markup=clubs_kb(clubs))
     await callback.answer()
 
 
@@ -386,22 +360,12 @@ async def show_club_detail(callback: CallbackQuery):
 
     spots_left = club["max_spots"] - club["registered"]
     already = db.is_registered(callback.from_user.id, club_id)
-
-    text = (
-        f"Speaking Club\n\n"
-        f"Date: {club['date']}\n"
-        f"Time: {club['time']}\n"
-        f"Topic: {club['topic']}\n"
-        f"Level: {club['level']}\n"
-        f"Spots left: {spots_left} of {club['max_spots']}"
-    )
+    text = (f"Speaking Club\n\nDate: {club['date']}\nTime: {club['time']}\n"
+            f"Topic: {club['topic']}\nLevel: {club['level']}\nSpots left: {spots_left} of {club['max_spots']}")
     if already:
-        text += "\n\nYou are already registered for this club!"
+        text += "\n\nYou are already registered!"
 
-    await callback.message.edit_text(
-        text,
-        reply_markup=club_detail_kb(club_id, spots_left, already)
-    )
+    await callback.message.edit_text(text, reply_markup=club_detail_kb(club_id, spots_left, already))
     await callback.answer()
 
 
@@ -410,10 +374,7 @@ async def register_confirm(callback: CallbackQuery):
     club_id = int(callback.data.split("_")[1])
     club = db.get_club(club_id)
     await callback.message.edit_text(
-        f"Confirm registration:\n\n"
-        f"Date: {club['date']} at {club['time']}\n"
-        f"Topic: {club['topic']}\n"
-        f"Level: {club['level']}",
+        f"Confirm registration:\n\nDate: {club['date']} at {club['time']}\nTopic: {club['topic']}\nLevel: {club['level']}",
         reply_markup=confirm_kb(club_id)
     )
     await callback.answer()
@@ -434,30 +395,21 @@ async def register_done(callback: CallbackQuery):
     db.register(user.id, user.username or "", user.full_name, club_id)
     club = db.get_club(club_id)
     registered = db.get_registered_count(club_id)
-    sheets.add_registration(
-        user.id, user.username or "", user.full_name,
-        club_id, club["date"], club["time"], club["topic"]
-    )
+    sheets.add_registration(user.id, user.username or "", user.full_name, club_id, club["date"], club["time"], club["topic"])
 
     await callback.message.edit_text(
-        f"You are registered!\n\n"
-        f"Date: {club['date']} at {club['time']}\n"
-        f"Topic: {club['topic']}\n"
-        f"Level: {club['level']}\n\n"
-        f"We will send you a reminder with the Google Meet link before the club.\n"
-        f"To cancel: /cancel_{club_id}",
+        f"You are registered!\n\nDate: {club['date']} at {club['time']}\n"
+        f"Topic: {club['topic']}\nLevel: {club['level']}\n\n"
+        f"We will send you a reminder with the link before the club.\nTo cancel: /cancel_{club_id}",
         reply_markup=back_kb()
     )
-
     for admin_id in ADMIN_IDS:
         try:
-            await bot.send_message(
-                admin_id,
+            await bot.send_message(admin_id,
                 f"New Speaking Club registration!\n"
-                f"👤 {user.full_name} (@{user.username})\n"
-                f"📅 {club['date']} {club['time']} — {club['topic']}\n"
-                f"👥 Registered: {registered}/{club['max_spots']}"
-            )
+                f"Name: {user.full_name} (@{user.username})\n"
+                f"Date: {club['date']} {club['time']} - {club['topic']}\n"
+                f"Registered: {registered}/{club['max_spots']}")
         except Exception:
             pass
     await callback.answer()
@@ -493,7 +445,7 @@ async def admin_panel(message: Message):
 async def admin_create_start(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
-    await callback.message.answer("Enter club date\nExample: June 20, 2025", reply_markup=cancel_kb())
+    await callback.message.answer("Enter club date\nExample: 20 August 2025", reply_markup=cancel_kb())
     await state.set_state(CreateClub.date)
     await callback.answer()
 
@@ -515,14 +467,14 @@ async def get_time(message: Message, state: FSMContext):
 @dp.message(CreateClub.topic)
 async def get_topic(message: Message, state: FSMContext):
     await state.update_data(topic=message.text)
-    await message.answer("Enter level\nExample: A1 / A2 / A1+A2")
+    await message.answer("Enter level\nExample: A1 / A2 / B1")
     await state.set_state(CreateClub.level)
 
 
 @dp.message(CreateClub.level)
 async def get_level(message: Message, state: FSMContext):
     await state.update_data(level=message.text)
-    await message.answer("Enter Google Meet link")
+    await message.answer("Enter meeting link (Google Meet / Zoom / Telemost)")
     await state.set_state(CreateClub.meet_link)
 
 
@@ -531,38 +483,17 @@ async def get_meet_link(message: Message, state: FSMContext):
     data = await state.get_data()
     await state.clear()
 
-    club_id = db.create_club(
-        date=data["date"], time=data["time"],
-        topic=data["topic"], level=data["level"],
-        meet_link=message.text, max_spots=8
-    )
+    club_id = db.create_club(date=data["date"], time=data["time"], topic=data["topic"],
+                              level=data["level"], meet_link=message.text, max_spots=8)
     sheets.add_club(club_id, data["date"], data["time"], data["topic"], data["level"])
 
-    announce = (
-        f"New Speaking Club!\n\n"
-        f"Date: {data['date']}\n"
-        f"Time: {data['time']}\n"
-        f"Topic: {data['topic']}\n"
-        f"Level: {data['level']}\n"
-        f"Spots: 8\n\n"
-        f"Write to the bot /start and tap Speaking Club to register!"
-    )
+    announce = (f"New Speaking Club!\n\nDate: {data['date']}\nTime: {data['time']}\n"
+                f"Topic: {data['topic']}\nLevel: {data['level']}\nSpots: 8\n\n"
+                f"Write to the bot /start and tap Speaking Club to register!")
 
-    # Анонс в топик Speaking Clubs (5)
-    await bot.send_message(
-        GROUP_ID, announce,
-        message_thread_id=SPEAKING_CLUB_THREAD_ID
-    )
-    # Анонс в топик Announcements (2)
-    await bot.send_message(
-        GROUP_ID, announce,
-        message_thread_id=UPDATES_THREAD_ID
-    )
-    await message.answer(
-        f"Club created!\n"
-        f"Announcement sent to Speaking Clubs and Announcements.\n"
-        f"Club ID: {club_id}"
-    )
+    await bot.send_message(GROUP_ID, announce, message_thread_id=SPEAKING_CLUB_THREAD_ID)
+    await bot.send_message(GROUP_ID, announce, message_thread_id=UPDATES_THREAD_ID)
+    await message.answer(f"Club created! Announcement sent to Speaking Clubs and Announcements.\nClub ID: {club_id}")
 
 
 @dp.callback_query(F.data == "admin_list")
@@ -578,11 +509,7 @@ async def admin_list_clubs(callback: CallbackQuery):
     for c in clubs:
         registered = db.get_registered_count(c["id"])
         members = db.get_club_members(c["id"])
-        text = (
-            f"Date: {c['date']} {c['time']}\n"
-            f"Topic: {c['topic']} ({c['level']})\n"
-            f"Registered: {registered}/{c['max_spots']}\n"
-        )
+        text = f"ID:{c['id']} | {c['date']} {c['time']}\nTopic: {c['topic']} ({c['level']})\nRegistered: {registered}/{c['max_spots']}\n"
         if members:
             text += "\nParticipants:\n"
             for _, username, full_name in members:
@@ -600,10 +527,10 @@ async def admin_notify(callback: CallbackQuery, state: FSMContext):
         await callback.answer("No active clubs", show_alert=True)
         return
 
-    text = "Choose club for reminder:\n\nEnter club number:\n\n"
+    text = "Choose club for reminder:\n\nEnter club ID:\n\n"
     for c in clubs:
         registered = db.get_registered_count(c["id"])
-        text += f"{c['id']} - {c['date']} {c['time']} | {c['topic']} ({c['level']}) | {registered} registered\n"
+        text += f"ID:{c['id']} - {c['date']} {c['time']} | {c['topic']} | {registered} registered\n"
 
     await callback.message.answer(text, reply_markup=cancel_kb())
     await state.set_state(NotifyClub.club_id)
@@ -631,33 +558,194 @@ async def admin_notify_send(message: Message, state: FSMContext):
 
         for user_id, username, full_name in members:
             try:
-                await bot.send_message(
-                    user_id,
-                    f"Reminder!\n\n"
-                    f"Speaking Club starts soon!\n"
+                await bot.send_message(user_id,
+                    f"Reminder!\n\nSpeaking Club starts soon!\n"
                     f"Date: {club['date']} at {club['time']}\n"
-                    f"Topic: {club['topic']}\n"
-                    f"Level: {club['level']}\n\n"
-                    f"Link: {club['meet_link']}"
-                )
+                    f"Topic: {club['topic']}\nLevel: {club['level']}\n\n"
+                    f"Link: {club['meet_link']}")
                 sent += 1
                 uname = f"@{username}" if username else full_name
                 names.append(f"- {full_name} ({uname})")
             except Exception:
                 pass
 
-        members_text = "\n".join(names)
         await message.answer(
-            f"Reminders sent!\n\n"
-            f"{club['date']} {club['time']} - {club['topic']}\n"
-            f"Sent to: {sent}\n\n"
-            f"Who received:\n{members_text}",
+            f"Reminders sent!\n\n{club['date']} {club['time']} - {club['topic']}\n"
+            f"Sent to: {sent}\n\nWho received:\n" + "\n".join(names),
             reply_markup=admin_menu_kb()
         )
     except ValueError:
         await message.answer("Enter only a number - club ID.")
 
 
+# ── Посещаемость ──
+@dp.callback_query(F.data == "admin_attendance")
+async def admin_attendance_start(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    clubs = db.get_active_clubs()
+    if not clubs:
+        await callback.answer("No active clubs", show_alert=True)
+        return
+
+    text = "Mark attendance:\n\nEnter club ID:\n\n"
+    for c in clubs:
+        registered = db.get_registered_count(c["id"])
+        text += f"ID:{c['id']} - {c['date']} {c['time']} | {c['topic']} | {registered} registered\n"
+
+    await callback.message.answer(text, reply_markup=cancel_kb())
+    await state.set_state(MarkAttendance.club_id)
+    await callback.answer()
+
+
+@dp.message(MarkAttendance.club_id)
+async def admin_attendance_club(message: Message, state: FSMContext):
+    try:
+        club_id = int(message.text.strip())
+        club = db.get_club(club_id)
+        if not club:
+            await message.answer("Club not found.")
+            return
+
+        members = db.get_club_members(club_id)
+        if not members:
+            await state.clear()
+            await message.answer("No one registered for this club.", reply_markup=admin_menu_kb())
+            return
+
+        await state.update_data(club_id=club_id)
+        text = f"Club: {club['date']} {club['time']} - {club['topic']}\n\n"
+        text += "Who attended? Enter usernames separated by commas\n(or 'all' if everyone came):\n\n"
+        for _, username, full_name in members:
+            uname = f"@{username}" if username else full_name
+            text += f"- {full_name} ({uname})\n"
+
+        await message.answer(text, reply_markup=cancel_kb())
+        await state.set_state(MarkAttendance.marking)
+    except ValueError:
+        await message.answer("Enter only a number - club ID.")
+
+
+@dp.message(MarkAttendance.marking)
+async def admin_attendance_mark(message: Message, state: FSMContext):
+    data = await state.get_data()
+    club_id = data["club_id"]
+    club = db.get_club(club_id)
+    members = db.get_club_members(club_id)
+    await state.clear()
+
+    if message.text.strip().lower() == "all":
+        for user_id, _, _ in members:
+            db.mark_attended(user_id, club_id)
+        await message.answer(f"All {len(members)} participants marked as attended!", reply_markup=admin_menu_kb())
+        return
+
+    attended_usernames = [u.strip().lstrip("@").lower() for u in message.text.split(",")]
+    marked = 0
+    for user_id, username, full_name in members:
+        if username and username.lower() in attended_usernames:
+            db.mark_attended(user_id, club_id)
+            marked += 1
+
+    not_attended = db.get_not_attended(club_id)
+    text = f"Attendance marked!\nAttended: {marked}\nDid not come: {len(not_attended)}\n"
+    if not_attended:
+        text += "\nDid not attend:\n"
+        for _, username, full_name in not_attended:
+            uname = f"@{username}" if username else full_name
+            text += f"- {full_name} ({uname})\n"
+
+    await message.answer(text, reply_markup=admin_menu_kb())
+
+
+# ── Написать конкретному ученику ──
+@dp.callback_query(F.data == "admin_message_student")
+async def admin_message_student_start(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    await callback.message.answer(
+        "Enter student username (with or without @):",
+        reply_markup=cancel_kb()
+    )
+    await state.set_state(MessageStudent.username)
+    await callback.answer()
+
+
+@dp.message(MessageStudent.username)
+async def admin_message_student_username(message: Message, state: FSMContext):
+    username = message.text.strip().lstrip("@")
+    student = db.get_student_by_username(username)
+    if not student:
+        await message.answer(f"Student @{username} not found. Check the username and try again.")
+        return
+    await state.update_data(student_id=student[0], student_name=student[2])
+    await message.answer(f"Write your message to {student[2]} (@{username}):", reply_markup=cancel_kb())
+    await state.set_state(MessageStudent.text)
+
+
+@dp.message(MessageStudent.text)
+async def admin_message_student_send(message: Message, state: FSMContext):
+    data = await state.get_data()
+    await state.clear()
+    try:
+        await bot.send_message(data["student_id"], message.text)
+        await message.answer(f"Message sent to {data['student_name']}!", reply_markup=admin_menu_kb())
+    except Exception:
+        await message.answer("Could not send message. Student may have blocked the bot.", reply_markup=admin_menu_kb())
+
+
+# ── Написать потоку ──
+@dp.callback_query(F.data == "admin_message_cohort")
+async def admin_message_cohort_start(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    cohorts = db.get_cohorts()
+    if not cohorts:
+        await callback.answer("No cohorts yet", show_alert=True)
+        return
+
+    text = "Choose cohort (enter date):\n\n"
+    for c in cohorts:
+        students = db.get_students_by_cohort(c)
+        text += f"- Cohort {c}: {len(students)} students\n"
+
+    await callback.message.answer(text, reply_markup=cancel_kb())
+    await state.set_state(MessageCohort.cohort)
+    await callback.answer()
+
+
+@dp.message(MessageCohort.cohort)
+async def admin_message_cohort_select(message: Message, state: FSMContext):
+    cohort = message.text.strip()
+    students = db.get_students_by_cohort(cohort)
+    if not students:
+        await message.answer(f"Cohort {cohort} not found. Try again.")
+        return
+    await state.update_data(cohort=cohort, count=len(students))
+    await message.answer(f"Write message for cohort {cohort} ({len(students)} students):", reply_markup=cancel_kb())
+    await state.set_state(MessageCohort.text)
+
+
+@dp.message(MessageCohort.text)
+async def admin_message_cohort_send(message: Message, state: FSMContext):
+    data = await state.get_data()
+    await state.clear()
+    students = db.get_students_by_cohort(data["cohort"])
+    sent = 0
+    failed = 0
+
+    await message.answer(f"Sending to cohort {data['cohort']} ({len(students)} students)...")
+    for user_id, _, _ in students:
+        try:
+            await bot.send_message(user_id, message.text)
+            sent += 1
+        except Exception:
+            failed += 1
+
+    await message.answer(f"Done!\nSent: {sent}\nFailed: {failed}", reply_markup=admin_menu_kb())
+
+
+# ── Остальные админ функции ──
 @dp.callback_query(F.data == "admin_students")
 async def admin_students(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
@@ -705,9 +793,9 @@ async def admin_delete_start(callback: CallbackQuery, state: FSMContext):
         await callback.answer("No active clubs", show_alert=True)
         return
 
-    text = "Choose club to cancel:\n\nEnter club number:\n\n"
+    text = "Choose club to cancel:\n\nEnter club ID:\n\n"
     for c in clubs:
-        text += f"{c['id']} - {c['date']} {c['time']} | {c['topic']} ({c['level']})\n"
+        text += f"ID:{c['id']} - {c['date']} {c['time']} | {c['topic']} ({c['level']})\n"
 
     await callback.message.answer(text, reply_markup=cancel_kb())
     await state.set_state(DeleteClub.club_id)
@@ -730,21 +818,14 @@ async def admin_delete_confirm(message: Message, state: FSMContext):
         notified = 0
         for user_id, _, full_name in members:
             try:
-                await bot.send_message(
-                    user_id,
-                    f"Speaking Club cancelled\n\n"
-                    f"Date: {club['date']} at {club['time']}\n"
-                    f"Topic: {club['topic']}\n\n"
-                    f"Follow new announcements in the group!"
-                )
+                await bot.send_message(user_id,
+                    f"Speaking Club cancelled\n\nDate: {club['date']} at {club['time']}\n"
+                    f"Topic: {club['topic']}\n\nFollow new announcements in the group!")
                 notified += 1
             except Exception:
                 pass
 
-        await message.answer(
-            f"Club cancelled.\nNotified participants: {notified}",
-            reply_markup=admin_menu_kb()
-        )
+        await message.answer(f"Club cancelled.\nNotified: {notified} participants", reply_markup=admin_menu_kb())
     except ValueError:
         await message.answer("Enter only a number - club ID.")
 
@@ -753,11 +834,7 @@ async def admin_delete_confirm(message: Message, state: FSMContext):
 async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
-    await callback.message.answer(
-        "Broadcast to all students\n\n"
-        "Write your message - it will be sent to everyone who ever wrote to the bot.",
-        reply_markup=cancel_kb()
-    )
+    await callback.message.answer("Broadcast to all students\n\nWrite your message:", reply_markup=cancel_kb())
     await state.set_state(Broadcast.text)
     await callback.answer()
 
@@ -768,35 +845,21 @@ async def admin_broadcast_send(message: Message, state: FSMContext):
     students = db.get_all_students()
     sent = 0
     failed = 0
-
     await message.answer(f"Sending to {len(students)} students...")
-
     for user_id, _, _ in students:
         try:
             await bot.send_message(user_id, message.text)
             sent += 1
         except Exception:
             failed += 1
-
-    await message.answer(
-        f"Broadcast complete!\nSent: {sent}\nFailed: {failed}",
-        reply_markup=admin_menu_kb()
-    )
+    await message.answer(f"Broadcast complete!\nSent: {sent}\nFailed: {failed}", reply_markup=admin_menu_kb())
 
 
 @dp.callback_query(F.data == "admin_weekly_topic")
 async def admin_weekly_start(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
-    await callback.message.answer(
-        "New weekly topic\n\n"
-        "Write the topic text - it will be posted in the Chatting topic.\n\n"
-        "You can include:\n"
-        "- Discussion topic\n"
-        "- New vocabulary\n"
-        "- Practice task",
-        reply_markup=cancel_kb()
-    )
+    await callback.message.answer("New weekly topic\n\nWrite the text - it will be posted in Chatting:", reply_markup=cancel_kb())
     await state.set_state(WeeklyTopic.text)
     await callback.answer()
 
@@ -804,10 +867,7 @@ async def admin_weekly_start(callback: CallbackQuery, state: FSMContext):
 @dp.message(WeeklyTopic.text)
 async def admin_weekly_send(message: Message, state: FSMContext):
     await state.clear()
-    await bot.send_message(
-        GROUP_ID, message.text,
-        message_thread_id=CHATTING_THREAD_ID
-    )
+    await bot.send_message(GROUP_ID, message.text, message_thread_id=CHATTING_THREAD_ID)
     await message.answer("Weekly topic posted in Chatting!", reply_markup=admin_menu_kb())
 
 
@@ -817,13 +877,20 @@ async def admin_stats(callback: CallbackQuery):
         return
     await callback.answer()
     stats = db.get_stats()
+    cohorts = db.get_cohorts()
     text = (
         f"School Statistics\n\n"
-        f"Total students (bot): {stats['students']}\n"
+        f"Total students: {stats['students']}\n"
         f"Registered profiles: {stats['profiles']}\n"
         f"Active clubs: {stats['active_clubs']}\n"
-        f"Total club registrations: {stats['total_registrations']}\n"
+        f"Total registrations: {stats['total_registrations']}\n"
+        f"Cohorts: {len(cohorts)}\n"
     )
+    if cohorts:
+        text += "\nCohorts:\n"
+        for c in cohorts:
+            count = len(db.get_students_by_cohort(c))
+            text += f"- {c}: {count} students\n"
     await callback.message.answer(text, reply_markup=admin_menu_kb())
 
 
@@ -835,17 +902,69 @@ async def admin_close_clubs(callback: CallbackQuery):
     if not clubs:
         await callback.answer("No active clubs", show_alert=True)
         return
-
     closed = 0
     for club in clubs:
         db.deactivate_club(club["id"])
         closed += 1
-
-    await callback.message.answer(
-        f"Closed {closed} clubs. They no longer appear to students.",
-        reply_markup=admin_menu_kb()
-    )
+    await callback.message.answer(f"Closed {clubs} clubs.", reply_markup=admin_menu_kb())
     await callback.answer()
+
+
+# ══════════════════════════════════════════════
+# ЕЖЕНЕДЕЛЬНЫЙ ОТЧЁТ (воскресенье)
+# ══════════════════════════════════════════════
+
+async def send_weekly_report():
+    """Отправляет отчёт каждое воскресенье"""
+    clubs_this_week = db.get_clubs_this_week()
+    active_in_topics = db.get_active_in_topics_this_week(ACTIVITY_THREADS)
+    all_students = db.get_all_students()
+
+    # Кто не писал в топики
+    inactive = [(uid, uname, fname) for uid, uname, fname in all_students if uid not in active_in_topics]
+
+    text = "Weekly Report\n\n"
+
+    # Клубы
+    if clubs_this_week:
+        text += f"Speaking Clubs this week: {len(clubs_this_week)}\n\n"
+        for club in clubs_this_week:
+            not_attended = db.get_not_attended(club["id"])
+            text += f"Club: {club['date']} {club['time']} - {club['topic']}\n"
+            text += f"Registered: {club['registered']}/{club['max_spots']}\n"
+            if not_attended:
+                text += f"Did not attend ({len(not_attended)}):\n"
+                for _, username, full_name in not_attended:
+                    uname = f"@{username}" if username else full_name
+                    text += f"  - {full_name} ({uname})\n"
+            text += "\n"
+    else:
+        text += "No Speaking Clubs this week.\n\n"
+
+    # Неактивные в топиках
+    text += f"Not active in discussion topics this week: {len(inactive)}\n"
+    if inactive:
+        for _, username, full_name in inactive[:20]:  # максимум 20
+            uname = f"@{username}" if username else full_name
+            text += f"- {full_name} ({uname})\n"
+        if len(inactive) > 20:
+            text += f"... and {len(inactive) - 20} more\n"
+
+    for admin_id in ADMIN_IDS:
+        try:
+            await bot.send_message(admin_id, text)
+        except Exception:
+            pass
+
+
+@dp.callback_query(F.data == "admin_weekly_report")
+async def admin_weekly_report_manual(callback: CallbackQuery):
+    """Ручной запуск отчёта"""
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    await callback.answer()
+    await callback.message.answer("Generating report...")
+    await send_weekly_report()
 
 
 # ══════════════════════════════════════════════
@@ -853,6 +972,12 @@ async def admin_close_clubs(callback: CallbackQuery):
 # ══════════════════════════════════════════════
 async def main():
     db.init()
+
+    # Планировщик для воскресного отчёта
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(send_weekly_report, "cron", day_of_week="sun", hour=20, minute=0)
+    scheduler.start()
+
     logger.info("English School Bot started")
     await dp.start_polling(bot)
 
