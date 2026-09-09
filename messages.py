@@ -1,42 +1,44 @@
 # messages.py
+# Все тексты бота - редактируй здесь!
+# Важно: не используй длинное тире (--), используй обычный дефис (-)
+
 WELCOME_MSG = """
-👋 Hi, {name}! Welcome to our English Club!
+Hi, {name}! Welcome to our English Club!
 
-I'm your assistant bot. Here you'll find everything you need:
+I'm your assistant bot. Here you will find everything you need:
 
-📋 Rules of our community
-📅 Schedule of lessons and clubs
-🎤 Speaking Club registration
-👥 Group & Individual lessons
+Rules of our community
+Schedule of lessons and clubs
+Speaking Club registration
+Group and Individual lessons
 
-Choose what interests you 👇
+Choose what interests you below
 """
 
 WELCOME_NEW_MSG = """
-👋 Hi, {name}! Welcome to our English Club!
+Hi, {name}! Welcome to our English Club!
 
-Before you start, please take a moment to register as a student — it helps us know you better!
+Before you start, please take a moment to register as a student - it helps us know you better!
 
-Choose what interests you 👇
+Choose what interests you below
 """
 
 RULES_MSG = """
-📋 Community Rules
+Community Rules
 
-🇬🇧 Language — язык всех чатов английский, исключение Chatting, там можно общаться на русском! 😆
+Language - язык всех чатов английский, исключение Chatting, там можно общаться на русском!
 
-🤝 Respect — никакой критики, исправлений друг друга. Помните, что уважение — основа любого общения ☝️
+Respect - никакой критики, исправлений друг друга. Помните, что уважение - основа любого общения
 
-📵 No spam — без спама в рабочих темах, например, в чатах Let's discuss. Там наши преподаватели читают Ваши ответы и стараются помочь в изучении английского.
+No spam - без спама в рабочих темах, например, в чатах Lets discuss. Там наши преподаватели читают Ваши ответы и стараются помочь в изучении английского.
 
-✍️ Activity — Ваша активность в чате = Ваши результаты. Заходите каждый день в клуб хотя бы на 15-20 минут, попрактиковать разные навыки.
+Activity - Ваша активность в чате = Ваши результаты. Заходите каждый день в клуб хотя бы на 15-20 минут, попрактиковать разные навыки.
 
-💬 Questions — всегда рады Вашим вопросам и пожеланиям, смело пишите @Tosha_petrolay или @lexavorobey
+Questions - всегда рады Вашим вопросам и пожеланиям, смело пишите @Tosha_petrolay или @lexavorobey
 """
 
 SCHEDULE_MSG = """
-SCHEDULE_MSG = """
-Everyday - новые темы для обсуждения, язык английский, название чатов: Let's discuss и Speak Up! Обратите внимание на уровень! Присоединяйтесь в любое время в течении дня к обсуждению, ставьте этот эмоджи 👀 и преподаватель отправит фидбек в личные сообщения. По пн, ср, пт - обсуждение в письменном формате. Во вторник и четверг заходите в Speak Up и оставляйте голосовые.
+Everyday - новые темы для обсуждения, язык английский, название чатов: Lets discuss и Speak Up! Обратите внимание на уровень! Присоединяйтесь в любое время в течении дня к обсуждению, ставьте этот эмодзи 👀 и преподаватель отправит фидбек в личные сообщения. По пн, ср, пт - обсуждение в письменном формате. Во вторник и четверг заходите в Speak Up и оставляйте голосовые.
 
 Tuesday/Friday - тренируй восприятие английского на слух с помощью Song Quiz.
 
@@ -48,27 +50,29 @@ Book club - выбираем, что будем читать и, раз в дв�
 
 Speaking Clubs - 3-4 раза в неделю. Следите за уведомлениями, чтобы успеть записаться. Обратите внимание на уровень разговорного клуба. Не забудьте воспользоваться Vocab list с полезными словами и выражениями!
 
-   Длительность: ~60-80 мин (зависет от количества участников)
+   Длительность: ~60 мин
    Платформа: Yandex Telemost / Zoom
    Максимальное количество участников: 8
 
 Webinars - вебинары с приглашенными гостями, объявляются заранее, запись проходит через менеджера или в общей группе.
 """
-"""
 
 CONTACTS_MSG = """
-💬 Contact us
+Contact us
 
-👩‍🏫 Teacher / curator
-@lexavorobey / @Tosha_petrolay
+Teacher / curator:
+@lexavorobey / @eseniia_no
 
-🕐 Response within 24 hours on weekdays.
+Manager:
+@Tosha_petrolay
+
+Response within 24 hours on weekdays.
 """
 
 REGISTER_START_MSG = """
-✍️ *Student Registration*
+Student Registration
 
-Please answer a few questions — it takes less than a minute!
+Please answer a few questions - it takes less than a minute!
 
-First, enter your *first name*:
+First, enter your first name:
 """
