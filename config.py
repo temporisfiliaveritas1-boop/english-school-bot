@@ -10,7 +10,6 @@ ADMIN_IDS = [
     if x.strip()
 ]
 
-# ID топиков в группе
 SPEAKING_CLUB_THREAD_ID = 5
 CHATTING_THREAD_ID      = 3
 UPDATES_THREAD_ID       = 2
