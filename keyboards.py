@@ -2,124 +2,114 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-# ── Онбординг ──
 def main_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="📋 Rules", callback_data="rules"),
-            InlineKeyboardButton(text="📅 Schedule", callback_data="schedule"),
-        ],
-        [
-            InlineKeyboardButton(text="🎤 Speaking Club", callback_data="show_clubs"),
-        ],
-        [
-            InlineKeyboardButton(text="📚 Lessons", callback_data="lessons"),
-        ],
-        [
-            InlineKeyboardButton(text="💬 Contact us", callback_data="contacts"),
-        ],
+        [InlineKeyboardButton(text="📋 Rules", callback_data="rules"),
+         InlineKeyboardButton(text="📅 Schedule", callback_data="schedule")],
+        [InlineKeyboardButton(text="🎤 Speaking Club", callback_data="show_clubs")],
+        [InlineKeyboardButton(text="📝 My registrations", callback_data="my_clubs")],
+        [InlineKeyboardButton(text="🎯 Try it now - get free feedback!", callback_data="random_question")],
+        [InlineKeyboardButton(text="📚 Lessons", callback_data="lessons")],
+        [InlineKeyboardButton(text="💬 Contact us", callback_data="contacts")],
     ])
 
 
 def main_menu_with_register_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="✍️ Register as a student", callback_data="register_student"),
-        ],
-        [
-            InlineKeyboardButton(text="📋 Rules", callback_data="rules"),
-            InlineKeyboardButton(text="📅 Schedule", callback_data="schedule"),
-        ],
-        [
-            InlineKeyboardButton(text="🎤 Speaking Club", callback_data="show_clubs"),
-        ],
-        [
-            InlineKeyboardButton(text="📚 Lessons", callback_data="lessons"),
-        ],
-        [
-            InlineKeyboardButton(text="💬 Contact us", callback_data="contacts"),
-        ],
+        [InlineKeyboardButton(text="✍️ Register as a student", callback_data="register_student")],
+        [InlineKeyboardButton(text="📋 Rules", callback_data="rules"),
+         InlineKeyboardButton(text="📅 Schedule", callback_data="schedule")],
+        [InlineKeyboardButton(text="🎤 Speaking Club", callback_data="show_clubs")],
+        [InlineKeyboardButton(text="📝 My registrations", callback_data="my_clubs")],
+        [InlineKeyboardButton(text="🎯 Try it now - get free feedback!", callback_data="random_question")],
+        [InlineKeyboardButton(text="📚 Lessons", callback_data="lessons")],
+        [InlineKeyboardButton(text="💬 Contact us", callback_data="contacts")],
     ])
 
 
 def back_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="◀️ Back to menu", callback_data="back")]
+        [InlineKeyboardButton(text="Back to menu", callback_data="back")]
+    ])
+
+
+def unregister_kb(club_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Cancel registration", callback_data=f"unregister_{club_id}")],
+        [InlineKeyboardButton(text="Back to menu", callback_data="back")],
     ])
 
 
 def consent_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ I agree to data processing", callback_data="consent_agree")],
-        [InlineKeyboardButton(text="❌ Cancel", callback_data="back")],
+        [InlineKeyboardButton(text="I agree to data processing", callback_data="consent_agree")],
+        [InlineKeyboardButton(text="Cancel", callback_data="back")],
     ])
 
 
 def how_found_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📢 Advertisement", callback_data="found_ad")],
-        [InlineKeyboardButton(text="👥 Friends", callback_data="found_friends")],
-        [InlineKeyboardButton(text="👩‍🏫 Teacher", callback_data="found_teacher")],
-        [InlineKeyboardButton(text="✏️ Other (write)", callback_data="found_other")],
+        [InlineKeyboardButton(text="Advertisement", callback_data="found_ad")],
+        [InlineKeyboardButton(text="Friends", callback_data="found_friends")],
+        [InlineKeyboardButton(text="Teacher", callback_data="found_teacher")],
+        [InlineKeyboardButton(text="Social media", callback_data="found_social")],
+        [InlineKeyboardButton(text="Other (write)", callback_data="found_other")],
     ])
 
 
-# ── Speaking Club ──
 def clubs_kb(clubs: list) -> InlineKeyboardMarkup:
     buttons = []
     for club in clubs:
         spots_left = club["max_spots"] - club["registered"]
-        label = f"📅 {club['date']} {club['time']} | {club['topic']} ({club['level']}) | 👥 {spots_left} spots"
+        label = f"{club['date']} {club['time']} | {club['topic']} ({club['level']}) | {spots_left} spots"
         buttons.append([InlineKeyboardButton(text=label, callback_data=f"club_{club['id']}")])
-    buttons.append([InlineKeyboardButton(text="◀️ Back to menu", callback_data="back")])
+    buttons.append([InlineKeyboardButton(text="Back to menu", callback_data="back")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def club_detail_kb(club_id: int, spots_left: int, already: bool) -> InlineKeyboardMarkup:
     buttons = []
     if already:
-        buttons.append([InlineKeyboardButton(text="✅ You're already registered", callback_data="already")])
+        buttons.append([InlineKeyboardButton(text="Already registered", callback_data="already")])
+        buttons.append([InlineKeyboardButton(text="Cancel registration", callback_data=f"unregister_{club_id}")])
     elif spots_left > 0:
-        buttons.append([InlineKeyboardButton(text="📝 Register", callback_data=f"register_{club_id}")])
+        buttons.append([InlineKeyboardButton(text="Register", callback_data=f"register_{club_id}")])
     else:
-        buttons.append([InlineKeyboardButton(text="😔 No spots left", callback_data="no_spots")])
-    buttons.append([InlineKeyboardButton(text="◀️ Back to clubs", callback_data="show_clubs")])
+        buttons.append([InlineKeyboardButton(text="No spots left", callback_data="no_spots")])
+    buttons.append([InlineKeyboardButton(text="Back to clubs", callback_data="show_clubs")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def confirm_kb(club_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Yes, register me!", callback_data=f"confirm_{club_id}")],
-        [InlineKeyboardButton(text="❌ Cancel", callback_data=f"club_{club_id}")],
+        [InlineKeyboardButton(text="Yes, register me!", callback_data=f"confirm_{club_id}")],
+        [InlineKeyboardButton(text="Cancel", callback_data=f"club_{club_id}")],
     ])
 
 
-# ── Админ ──
 def admin_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        # Speaking Club
-        [InlineKeyboardButton(text="➕ Create Speaking Club", callback_data="admin_create")],
-        [InlineKeyboardButton(text="📋 Clubs & participants", callback_data="admin_list")],
-        [InlineKeyboardButton(text="🔔 Send reminders", callback_data="admin_notify")],
-        [InlineKeyboardButton(text="✅ Mark attendance", callback_data="admin_attendance")],
-        [InlineKeyboardButton(text="❌ Cancel club", callback_data="admin_delete_club")],
-        [InlineKeyboardButton(text="🔒 Close all clubs", callback_data="admin_close_clubs")],
-        # Ученики
-        [InlineKeyboardButton(text="👥 Student list", callback_data="admin_students")],
-        [InlineKeyboardButton(text="📋 Student profiles", callback_data="admin_profiles")],
-        # Сообщения
-        [InlineKeyboardButton(text="📢 Broadcast to all", callback_data="admin_broadcast")],
-        [InlineKeyboardButton(text="✉️ Message a student", callback_data="admin_message_student")],
-        [InlineKeyboardButton(text="👥 Message a cohort", callback_data="admin_message_cohort")],
-        # Контент
-        [InlineKeyboardButton(text="📝 New weekly topic", callback_data="admin_weekly_topic")],
-        # Аналитика
-        [InlineKeyboardButton(text="📊 Statistics", callback_data="admin_stats")],
-        [InlineKeyboardButton(text="📈 Weekly report", callback_data="admin_weekly_report")],
+        [InlineKeyboardButton(text="Create Speaking Club", callback_data="admin_create")],
+        [InlineKeyboardButton(text="Clubs and participants", callback_data="admin_list")],
+        [InlineKeyboardButton(text="Send reminders", callback_data="admin_notify")],
+        [InlineKeyboardButton(text="Mark attendance", callback_data="admin_attendance")],
+        [InlineKeyboardButton(text="Cancel club", callback_data="admin_delete_club")],
+        [InlineKeyboardButton(text="Close all clubs", callback_data="admin_close_clubs")],
+        [InlineKeyboardButton(text="Student list", callback_data="admin_students")],
+        [InlineKeyboardButton(text="Student profiles", callback_data="admin_profiles")],
+        [InlineKeyboardButton(text="Broadcast to all", callback_data="admin_broadcast")],
+        [InlineKeyboardButton(text="Message a student", callback_data="admin_message_student")],
+        [InlineKeyboardButton(text="Message a cohort", callback_data="admin_message_cohort")],
+        [InlineKeyboardButton(text="New weekly topic", callback_data="admin_weekly_topic")],
+        [InlineKeyboardButton(text="Statistics", callback_data="admin_stats")],
+        [InlineKeyboardButton(text="Weekly report", callback_data="admin_weekly_report")],
+        [InlineKeyboardButton(text="Restore from Google Sheets", callback_data="admin_restore")],
+        [InlineKeyboardButton(text="Cold leads list", callback_data="admin_cold_leads")],
+        [InlineKeyboardButton(text="Message cold leads", callback_data="admin_message_cold")],
     ])
 
 
 def cancel_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="❌ Cancel", callback_data="cancel_state")]
+        [InlineKeyboardButton(text="Cancel", callback_data="cancel_state")]
     ])
