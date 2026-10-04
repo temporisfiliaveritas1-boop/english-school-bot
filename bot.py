@@ -1,11 +1,10 @@
-# bot.py
 import asyncio
 from datetime import datetime
 import logging
 import random
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery, ChatMemberUpdated, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.filters import CommandStart, Command, ChatMemberUpdatedFilter, JOIN_TRANSITION
+from aiogram.filters import CommandStart, Command, ChatMemberUpdatedFilter, JOIN_TRANSITION, StateFilter
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -264,13 +263,13 @@ async def cmd_start(message: Message):
 # ВХОДЯЩИЕ СООБЩЕНИЯ ОТ СТУДЕНТОВ
 # ══════════════════════════════════════════════
 
-@dp.message(F.chat.type == "private", ~F.text.startswith("/"))
+# StateFilter(None) — срабатывает ТОЛЬКО когда пользователь не в процессе
+# (не заполняет анкету, админ не создаёт клуб / не подтверждает restore и т.д.).
+# Без него этот обработчик перехватывал все такие ответы, и они терялись.
+@dp.message(F.chat.type == "private", ~F.text.startswith("/"), StateFilter(None))
 async def handle_private_message(message: Message, state: FSMContext):
     user_id = message.from_user.id
     if user_id in ADMIN_IDS:
-        return
-    current_state = await state.get_state()
-    if current_state is not None:
         return
 
     await forward_to_admins(message)
@@ -447,8 +446,8 @@ async def reg_consent(callback: CallbackQuery, state: FSMContext):
                    email=data.get("email", ""), how_found=data.get("how_found", ""))
     db.assign_cohort(user.id)  # cohort только после регистрации
     sheets.update_student_profile(user_id=user.id, first_name=data.get("first_name", ""),
-                                   last_name=data.get("last_name", ""), phone=data.get("phone", ""),
-                                   email=data.get("email", ""), how_found=data.get("how_found", ""))
+                                  last_name=data.get("last_name", ""), phone=data.get("phone", ""),
+                                  email=data.get("email", ""), how_found=data.get("how_found", ""))
     for admin_id in ADMIN_IDS:
         try:
             await bot.send_message(admin_id,
@@ -623,19 +622,24 @@ async def admin_restore_start(callback: CallbackQuery, state: FSMContext):
 
 @dp.message(RestoreFromSheets.confirm)
 async def admin_restore_confirm(message: Message, state: FSMContext):
-    if message.text.strip().upper() != "YES":
+    if (message.text or "").strip().upper() != "YES":
         await state.clear()
         await message.answer("Cancelled.", reply_markup=admin_menu_kb())
         return
     await state.clear()
     await message.answer("Restoring students from Google Sheets...")
     try:
-        restored = sheets.restore_students(db)
+        # запросы к Google идут в отдельном потоке, чтобы бот не «зависал»
+        students_added, profiles_added = await asyncio.to_thread(sheets.restore_students, db)
         await message.answer(
-            f"Restore complete!\nStudents restored: {restored}\nTotal in database: {db.count_students()}",
+            f"Restore complete!\n"
+            f"New students: {students_added}\n"
+            f"New profiles: {profiles_added}\n"
+            f"Total in database: {db.count_students()} students, {db.count_profiles()} profiles",
             reply_markup=admin_menu_kb())
     except Exception as e:
-        await message.answer(f"Error during restore: {e}", reply_markup=admin_menu_kb())
+        logger.exception("Restore failed")
+        await message.answer(f"Error during restore: {type(e).__name__}: {e}", reply_markup=admin_menu_kb())
 
 
 # ══════════════════════════════════════════════
@@ -691,7 +695,7 @@ async def get_meet_link(message: Message, state: FSMContext):
     data = await state.get_data()
     await state.clear()
     club_id = db.create_club(date=data["date"], time=data["time"], topic=data["topic"],
-                              level=data["level"], meet_link=message.text, max_spots=8)
+                             level=data["level"], meet_link=message.text, max_spots=8)
     sheets.add_club(club_id, data["date"], data["time"], data["topic"], data["level"])
     announce = (f"New Speaking Club!\n\nDate: {data['date']}\nTime: {data['time']}\n"
                 f"Topic: {data['topic']}\nLevel: {data['level']}\nSpots: 8\n\n"
@@ -1127,7 +1131,7 @@ async def admin_message_cold_send(message: Message, state: FSMContext):
     sent = 0
     failed = 0
     await message.answer(f"Sending to {len(cold)} cold leads...")
-    for user_id, _, _ in cold:
+    for user_id, _, _, _ in cold:
         try:
             await bot.send_message(user_id, text)
             sent += 1
@@ -1193,6 +1197,7 @@ async def send_reminder_to_cold_leads():
 
 async def main():
     db.init()
+    logger.info("Database path: %s | students: %d", db.path, db.count_students())
     scheduler = AsyncIOScheduler()
     scheduler.add_job(send_weekly_report, "cron", day_of_week="sun", hour=20, minute=0)
     scheduler.add_job(send_reminder_to_cold_leads, "cron", hour=12, minute=0)

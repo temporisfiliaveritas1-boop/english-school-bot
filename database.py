@@ -1,6 +1,11 @@
 # database.py
+import os
 import sqlite3
 from datetime import datetime, date, timedelta
+
+# На Railway задайте переменную DB_PATH=/data/english_school.db
+# и подключите Volume с путём /data — тогда база не будет сбрасываться при деплое.
+DB_PATH = os.environ.get("DB_PATH", "english_school.db")
 
 
 def get_next_friday(from_date=None):
@@ -17,8 +22,11 @@ def get_week_start():
 
 
 class Database:
-    def __init__(self, path: str = "english_school.db"):
+    def __init__(self, path: str = DB_PATH):
         self.path = path
+        folder = os.path.dirname(path)
+        if folder:
+            os.makedirs(folder, exist_ok=True)
 
     def _conn(self):
         return sqlite3.connect(self.path)
@@ -57,6 +65,29 @@ class Database:
         with self._conn() as conn:
             conn.execute("""INSERT OR IGNORE INTO students (user_id, username, full_name, joined_at, cohort)
                 VALUES (?, ?, ?, ?, NULL)""", (user_id, username, full_name, datetime.now().isoformat()))
+
+    def restore_student(self, user_id, username, full_name, joined_at: datetime, profile: dict | None = None):
+        """
+        Восстановление ученика из Google Sheets с ИСХОДНОЙ датой добавления.
+        Существующих не трогает. Возвращает (ученик_добавлен, анкета_добавлена).
+        """
+        with self._conn() as conn:
+            cur = conn.execute("""INSERT OR IGNORE INTO students (user_id, username, full_name, joined_at, cohort)
+                VALUES (?, ?, ?, ?, NULL)""", (user_id, username, full_name, joined_at.isoformat()))
+            student_added = cur.rowcount == 1
+            profile_added = False
+            if profile:
+                cur = conn.execute("""INSERT OR IGNORE INTO student_profiles
+                    (user_id, first_name, last_name, phone, email, how_found, registered_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (user_id, profile["first_name"], profile["last_name"], profile["phone"],
+                     profile["email"], profile["how_found"], joined_at.isoformat()))
+                profile_added = cur.rowcount == 1
+                if profile_added:
+                    cohort = get_next_friday(joined_at.date())
+                    conn.execute("UPDATE students SET cohort=? WHERE user_id=? AND cohort IS NULL",
+                                 (cohort, user_id))
+        return student_added, profile_added
 
     def assign_cohort(self, user_id):
         """Назначает cohort. Вызывается только после заполнения анкеты."""
