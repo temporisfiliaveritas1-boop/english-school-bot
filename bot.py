@@ -264,7 +264,7 @@ async def cmd_start(message: Message):
 # ВХОДЯЩИЕ СООБЩЕНИЯ ОТ СТУДЕНТОВ
 # ══════════════════════════════════════════════
 
-@dp.message(F.chat.type == "private")
+@dp.message(F.chat.type == "private", ~F.text.startswith("/"))
 async def handle_private_message(message: Message, state: FSMContext):
     user_id = message.from_user.id
     if user_id in ADMIN_IDS:
