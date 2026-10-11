@@ -18,7 +18,7 @@ from keyboards import (
     clubs_kb, club_detail_kb, confirm_kb, unregister_kb,
     admin_menu_kb, cancel_kb, consent_kb, how_found_kb
 )
-from messages import WELCOME_MSG, WELCOME_NEW_MSG, RULES_MSG, SCHEDULE_MSG, CONTACTS_MSG, REGISTER_START_MSG
+from messages import WELCOME_MSG, WELCOME_NEW_MSG, RULES_MSG, SCHEDULE_MSG, CONTACTS_MSG, REGISTER_START_MSG, SOCIALS_MSG
 from database import Database
 import sheets
 
@@ -319,6 +319,12 @@ async def show_schedule(callback: CallbackQuery):
 @dp.callback_query(F.data == "contacts")
 async def show_contacts(callback: CallbackQuery):
     await callback.message.edit_text(CONTACTS_MSG, reply_markup=back_kb())
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "socials")
+async def show_socials(callback: CallbackQuery):
+    await callback.message.edit_text(SOCIALS_MSG, reply_markup=back_kb(), disable_web_page_preview=True)
     await callback.answer()
 
 
@@ -1105,7 +1111,7 @@ async def admin_message_cold_start(callback: CallbackQuery, state: FSMContext):
         await callback.answer("No cold leads!", show_alert=True)
         return
     await callback.message.answer(
-        f"Message to {len(cold)} cold leads:\n\nWrite your message or send /default for standard reminder:",
+        f"Message to {len(cold)} cold leads:\n\nWrite your message:",
         reply_markup=cancel_kb()
     )
     await state.set_state(MessageColdLeads.text)
@@ -1117,16 +1123,10 @@ async def admin_message_cold_send(message: Message, state: FSMContext):
     await state.clear()
     cold = db.get_unregistered_students()
 
-    if message.text.strip() == "/default":
-        text = (
-            "Добрый день! Вы не зарегистрировались в нашем клубе.\n\n"
-            "Предлагаю бесплатно попробовать получить фидбек нашего преподавателя - "
-            "включи рандомайзер тем и ответь письменно или голосом, "
-            "кнопка называется \"Try it now - get free feedback!\"\n\n"
-            "А также ты можешь задать вопросы по клубу @Tosha_petrolay"
-        )
-    else:
-        text = message.text
+    text = message.text
+    if not text:
+        await message.answer("Please send a text message.", reply_markup=admin_menu_kb())
+        return
 
     sent = 0
     failed = 0
@@ -1170,37 +1170,11 @@ async def send_weekly_report():
             pass
 
 
-async def send_reminder_to_cold_leads():
-    """Автоматическое напоминание холодным клиентам через 3 дня"""
-    cold = db.get_students_older_than_days(3)
-    sent = 0
-    for user_id, _, _ in cold:
-        try:
-            await bot.send_message(
-                user_id,
-                "Добрый день! Вы не зарегистрировались в нашем клубе.\n\n"
-                "Предлагаю бесплатно попробовать получить фидбек нашего преподавателя - "
-                "включи рандомайзер тем и ответь письменно или голосом, "
-                "кнопка называется \"Try it now - get free feedback!\"\n\n"
-                "А также ты можешь задать вопросы по клубу @Tosha_petrolay"
-            )
-            sent += 1
-        except Exception:
-            pass
-    if sent > 0:
-        for admin_id in ADMIN_IDS:
-            try:
-                await bot.send_message(admin_id, f"Auto-reminder sent to {sent} cold leads.")
-            except Exception:
-                pass
-
-
 async def main():
     db.init()
     logger.info("Database path: %s | students: %d", db.path, db.count_students())
     scheduler = AsyncIOScheduler()
     scheduler.add_job(send_weekly_report, "cron", day_of_week="sun", hour=20, minute=0)
-    scheduler.add_job(send_reminder_to_cold_leads, "cron", hour=12, minute=0)
     scheduler.start()
     logger.info("English School Bot started")
     await dp.start_polling(bot)

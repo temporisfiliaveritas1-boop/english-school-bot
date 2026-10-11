@@ -69,6 +69,16 @@ Manager:
 Response within 24 hours on weekdays.
 """
 
+# Впишите ссылки после двоеточия, например: Наш инстаграм: https://instagram.com/inotherwords
+SOCIALS_MSG = """
+Our social media
+
+Наш инстаграм:
+Наш ютуб:
+Наш тикток:
+Наш открытый канал в ТГ:
+"""
+
 REGISTER_START_MSG = """
 Student Registration
 

@@ -10,6 +10,7 @@ def main_menu_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="📝 My registrations", callback_data="my_clubs")],
         [InlineKeyboardButton(text="🎯 Try it now - get free feedback!", callback_data="random_question")],
         [InlineKeyboardButton(text="📚 Lessons", callback_data="lessons")],
+        [InlineKeyboardButton(text="🌐 Our social media", callback_data="socials")],
         [InlineKeyboardButton(text="💬 Contact us", callback_data="contacts")],
     ])
 
@@ -23,6 +24,7 @@ def main_menu_with_register_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="📝 My registrations", callback_data="my_clubs")],
         [InlineKeyboardButton(text="🎯 Try it now - get free feedback!", callback_data="random_question")],
         [InlineKeyboardButton(text="📚 Lessons", callback_data="lessons")],
+        [InlineKeyboardButton(text="🌐 Our social media", callback_data="socials")],
         [InlineKeyboardButton(text="💬 Contact us", callback_data="contacts")],
     ])
 
