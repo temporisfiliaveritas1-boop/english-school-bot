@@ -547,7 +547,7 @@ async def show_my_clubs(callback: CallbackQuery):
     my_registrations = db.get_user_registrations(user_id)
     if not my_registrations:
         await callback.message.edit_text(
-            "You are not registered for any Speaking Clubs.\nTap Speaking Club to see available clubs!",
+            "You are not registered for any Speaking Clubs.\nНажмите «Записаться на разговорный клуб» в меню!",
             reply_markup=back_kb())
         await callback.answer()
         return
@@ -705,7 +705,7 @@ async def get_meet_link(message: Message, state: FSMContext):
     sheets.add_club(club_id, data["date"], data["time"], data["topic"], data["level"])
     announce = (f"New Speaking Club!\n\nDate: {data['date']}\nTime: {data['time']}\n"
                 f"Topic: {data['topic']}\nLevel: {data['level']}\nSpots: 8\n\n"
-                f"Write to the bot /start and tap Speaking Club to register!")
+                f"Запись: напишите боту /start и нажмите «Записаться на разговорный клуб»!")
     await bot.send_message(GROUP_ID, announce, message_thread_id=SPEAKING_CLUB_THREAD_ID)
     await bot.send_message(GROUP_ID, announce, message_thread_id=UPDATES_THREAD_ID)
     await message.answer(f"Club created! Announcement sent.\nClub ID: {club_id}")

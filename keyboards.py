@@ -6,7 +6,7 @@ def main_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📋 Rules", callback_data="rules"),
          InlineKeyboardButton(text="📅 Schedule", callback_data="schedule")],
-        [InlineKeyboardButton(text="🎤 Speaking Club", callback_data="show_clubs")],
+        [InlineKeyboardButton(text="🎤 Записаться на разговорный клуб (по подписке)", callback_data="show_clubs")],
         [InlineKeyboardButton(text="📝 My registrations", callback_data="my_clubs")],
         [InlineKeyboardButton(text="🎯 БЕСПЛАТНЫЙ фидбек - проверь свой разговор", callback_data="random_question")],
         [InlineKeyboardButton(text="📊 Бесплатный тест на уровень", callback_data="level_test")],
@@ -21,7 +21,7 @@ def main_menu_with_register_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="✍️ Register as a student", callback_data="register_student")],
         [InlineKeyboardButton(text="📋 Rules", callback_data="rules"),
          InlineKeyboardButton(text="📅 Schedule", callback_data="schedule")],
-        [InlineKeyboardButton(text="🎤 Speaking Club", callback_data="show_clubs")],
+        [InlineKeyboardButton(text="🎤 Записаться на разговорный клуб (по подписке)", callback_data="show_clubs")],
         [InlineKeyboardButton(text="📝 My registrations", callback_data="my_clubs")],
         [InlineKeyboardButton(text="🎯 БЕСПЛАТНЫЙ фидбек - проверь свой разговор", callback_data="random_question")],
         [InlineKeyboardButton(text="📊 Бесплатный тест на уровень", callback_data="level_test")],
