@@ -107,7 +107,7 @@ In Other Words - это разговорный клуб, а не курсы и �
 """
 
 LEVEL_TEST_MSG = """
-📊 <b>Бесплатный тест на уровень</b>
+🇬🇧 <b>Тест на уровень</b>
 
 Узнай свой уровень английского - пройди <a href="https://docs.google.com/forms/d/e/1FAIpQLSeXZGaoVA_UL3IjAKZjnfMpRNI1Z3Htu0QOEvNc6rImG10EPg/viewform?usp=dialog">тест</a> 👈
 
