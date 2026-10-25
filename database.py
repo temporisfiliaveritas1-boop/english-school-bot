@@ -111,6 +111,22 @@ class Database:
                 FROM students s LEFT JOIN student_profiles p ON s.user_id = p.user_id
                 WHERE p.user_id IS NULL""").fetchall()
 
+    def get_cold_leads(self, min_days: int = 1, max_days: int = 14):
+        """Холодные клиенты (без анкеты), зашедшие от min_days до max_days дней назад.
+        Возвращает [(user_id, username, full_name, joined_at, days_ago)], новые сверху."""
+        now = datetime.now()
+        result = []
+        for user_id, username, full_name, joined_at in self.get_unregistered_students():
+            try:
+                joined = datetime.fromisoformat(joined_at)
+            except (TypeError, ValueError):
+                continue
+            days_ago = (now - joined).days
+            if min_days <= days_ago <= max_days:
+                result.append((user_id, username, full_name, joined, days_ago))
+        result.sort(key=lambda r: r[3], reverse=True)
+        return result
+
     def get_students_older_than_days(self, days: int):
         """Холодные клиенты N+ дней без анкеты."""
         cutoff = (datetime.now() - timedelta(days=days)).isoformat()

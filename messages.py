@@ -80,6 +80,40 @@ Our social media 🌐
 📢 Открытый <a href="https://t.me/inotherwords_club">Telegram-канал</a> с важными обновлениями по клубу
 """
 
+# Тексты ниже в формате HTML: <b>жирный</b>, <a href="ссылка">текст</a>
+
+FEEDBACK_MSG = """
+🎯 <b>БЕСПЛАТНЫЙ фидбек - проверь свой разговор</b>
+
+💬 <b>Твоя тема:</b>
+<blockquote><b>{question}</b></blockquote>
+
+📌 <b>Правила:</b>
+1. Ответь на вопрос голосовым 🎤 или текстом ✍️ прямо в этот чат
+2. Отвечай на английском - постарайся сказать 3-5 предложений
+3. Преподаватель пришлёт тебе личный фидбек 👩‍🏫
+
+🇬🇧 Answer in English - voice or text. Our teacher will send you personal feedback!
+"""
+
+LESSONS_MSG = """
+📚 <b>Уроки английского</b>
+
+Если вы ищете преподавателя или группу английского языка - наш менеджер подскажет.
+
+In Other Words - это разговорный клуб, а не курсы и не школа. Но в нашей команде есть опытные преподаватели, которые набирают новых учеников.
+
+✍️ Написать менеджеру: <a href="https://t.me/Tosha_petrolay">@Tosha_petrolay</a>
+"""
+
+LEVEL_TEST_MSG = """
+📊 <b>Бесплатный тест на уровень</b>
+
+Узнай свой уровень английского - пройди <a href="https://docs.google.com/forms/d/e/1FAIpQLSeXZGaoVA_UL3IjAKZjnfMpRNI1Z3Htu0QOEvNc6rImG10EPg/viewform?usp=dialog">тест</a> 👈
+
+Результат поможет выбрать разговорный клуб подходящего уровня.
+"""
+
 REGISTER_START_MSG = """
 Student Registration
 

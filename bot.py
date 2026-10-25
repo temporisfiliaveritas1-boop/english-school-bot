@@ -1,3 +1,4 @@
+import html
 import asyncio
 from datetime import datetime
 import logging
@@ -16,9 +17,10 @@ from config import FEEDBACK_THREAD_ID, SONG_QUIZ_THREAD_ID, BOOK_CLUB_THREAD_ID
 from keyboards import (
     main_menu_kb, main_menu_with_register_kb, back_kb,
     clubs_kb, club_detail_kb, confirm_kb, unregister_kb,
-    admin_menu_kb, cancel_kb, consent_kb, how_found_kb
+    admin_menu_kb, cancel_kb, consent_kb, how_found_kb, feedback_kb
 )
 from messages import WELCOME_MSG, WELCOME_NEW_MSG, RULES_MSG, SCHEDULE_MSG, CONTACTS_MSG, REGISTER_START_MSG, SOCIALS_MSG
+from messages import FEEDBACK_MSG, LESSONS_MSG, LEVEL_TEST_MSG
 from database import Database
 import sheets
 
@@ -330,15 +332,15 @@ async def show_socials(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "lessons")
 async def show_lessons(callback: CallbackQuery):
-    await callback.message.edit_text(
-        "Lessons\n\nWe offer lessons for all levels:\n\n"
-        "Group lessons: A1, A2, B1, B2, C1\n"
-        "Individual lessons: any level and goal\n"
-        "Exam prep: OGE, EGE\n"
-        "IELTS preparation\n\n"
-        "Write to our manager:\n@Tosha_petrolay",
-        reply_markup=back_kb()
-    )
+    await callback.message.edit_text(LESSONS_MSG, reply_markup=back_kb(),
+                                     parse_mode="HTML", disable_web_page_preview=True)
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "level_test")
+async def show_level_test(callback: CallbackQuery):
+    await callback.message.edit_text(LEVEL_TEST_MSG, reply_markup=back_kb(),
+                                     parse_mode="HTML", disable_web_page_preview=True)
     await callback.answer()
 
 
@@ -352,11 +354,9 @@ async def send_random_question(callback: CallbackQuery):
     user_id = callback.from_user.id
     pending_questions[user_id] = question
     await callback.message.edit_text(
-        "Try it now - get free feedback!\n\n"
-        f"Your question:\n\n{question}\n\n"
-        "Answer in text or send a voice message directly to this chat.\n"
-        "Our teacher will send you personal feedback!",
-        reply_markup=back_kb()
+        FEEDBACK_MSG.format(question=html.escape(question)),
+        reply_markup=feedback_kb(),
+        parse_mode="HTML"
     )
     await callback.answer()
 
@@ -1083,35 +1083,53 @@ async def admin_weekly_report_manual(callback: CallbackQuery):
     await send_weekly_report()
 
 
+COLD_MIN_DAYS = 1    # холодные лиды: зашли не раньше чем 1 день назад
+COLD_MAX_DAYS = 14   # ... и не позже чем 14 дней назад
+
+
+async def send_long(message: Message, text: str, **kwargs):
+    """Telegram ограничивает сообщение 4096 символами - режем по строкам."""
+    chunk = ""
+    for line in text.split("\n"):
+        if len(chunk) + len(line) + 1 > 4000:
+            await message.answer(chunk)
+            chunk = ""
+        chunk += line + "\n"
+    if chunk.strip():
+        await message.answer(chunk, **kwargs)
+
+
 @dp.callback_query(F.data == "admin_cold_leads")
 async def admin_cold_leads(callback: CallbackQuery):
-    """Показать список холодных клиентов"""
+    """Холодные лиды: зашли в бота 1-14 дней назад и не заполнили анкету"""
     if callback.from_user.id not in ADMIN_IDS:
         return
     await callback.answer()
-    cold = db.get_unregistered_students()
+    cold = db.get_cold_leads(COLD_MIN_DAYS, COLD_MAX_DAYS)
     if not cold:
-        await callback.message.answer("No cold leads! Everyone has registered.")
+        await callback.message.answer(
+            f"No cold leads for {COLD_MIN_DAYS}-{COLD_MAX_DAYS} days.", reply_markup=admin_menu_kb())
         return
-    text = f"Cold leads ({len(cold)}) - signed up but no profile:\n\n"
-    for user_id, username, full_name, joined_at in cold:
-        uname = f"@{username}" if username else "no username"
-        days_ago = (datetime.now() - datetime.fromisoformat(joined_at)).days
-        text += f"- {full_name} ({uname}) - {days_ago} days ago\n"
-    await callback.message.answer(text)
+    text = (f"Cold leads ({len(cold)})\n"
+            f"Зашли {COLD_MIN_DAYS}-{COLD_MAX_DAYS} дн. назад, анкету не заполнили.\n"
+            f"Сначала самые новые:\n\n")
+    for user_id, username, full_name, joined, days_ago in cold:
+        uname = f"@{username}" if username else f"ID {user_id}"
+        text += f"- {full_name} ({uname}) - {joined.strftime('%d.%m')}, {days_ago} дн. назад\n"
+    await send_long(callback.message, text, reply_markup=admin_menu_kb())
 
 
 @dp.callback_query(F.data == "admin_message_cold")
 async def admin_message_cold_start(callback: CallbackQuery, state: FSMContext):
-    """Рассылка холодным клиентам"""
+    """Рассылка холодным лидам 1-14 дней"""
     if callback.from_user.id not in ADMIN_IDS:
         return
-    cold = db.get_unregistered_students()
+    cold = db.get_cold_leads(COLD_MIN_DAYS, COLD_MAX_DAYS)
     if not cold:
-        await callback.answer("No cold leads!", show_alert=True)
+        await callback.answer(f"No cold leads for {COLD_MIN_DAYS}-{COLD_MAX_DAYS} days!", show_alert=True)
         return
     await callback.message.answer(
-        f"Message to {len(cold)} cold leads:\n\nWrite your message:",
+        f"Message to {len(cold)} cold leads ({COLD_MIN_DAYS}-{COLD_MAX_DAYS} days):\n\nWrite your message:",
         reply_markup=cancel_kb()
     )
     await state.set_state(MessageColdLeads.text)
@@ -1121,17 +1139,15 @@ async def admin_message_cold_start(callback: CallbackQuery, state: FSMContext):
 @dp.message(MessageColdLeads.text)
 async def admin_message_cold_send(message: Message, state: FSMContext):
     await state.clear()
-    cold = db.get_unregistered_students()
-
     text = message.text
     if not text:
         await message.answer("Please send a text message.", reply_markup=admin_menu_kb())
         return
-
+    cold = db.get_cold_leads(COLD_MIN_DAYS, COLD_MAX_DAYS)
     sent = 0
     failed = 0
     await message.answer(f"Sending to {len(cold)} cold leads...")
-    for user_id, _, _, _ in cold:
+    for user_id, *_ in cold:
         try:
             await bot.send_message(user_id, text)
             sent += 1
