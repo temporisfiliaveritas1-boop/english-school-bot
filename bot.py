@@ -324,7 +324,7 @@ async def show_contacts(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "socials")
 async def show_socials(callback: CallbackQuery):
-    await callback.message.edit_text(SOCIALS_MSG, reply_markup=back_kb(), disable_web_page_preview=True)
+    await callback.message.edit_text(SOCIALS_MSG, reply_markup=back_kb(), parse_mode="HTML", disable_web_page_preview=True)
     await callback.answer()
 
 

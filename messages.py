@@ -69,14 +69,15 @@ Manager:
 Response within 24 hours on weekdays.
 """
 
-# Впишите ссылки после двоеточия, например: Наш инстаграм: https://instagram.com/inotherwords
+# Ссылки в формате HTML: <a href="ссылка">текст</a>
 SOCIALS_MSG = """
-Our social media
+Our social media 🌐
 
-Наш инстаграм:
-Наш ютуб:
-Наш тикток:
-Наш открытый канал в ТГ:
+📸 <a href="https://www.instagram.com/inotherwords_club/">Instagram</a> с полезными материалами для прокачки английского
+
+🎧 <a href="https://www.youtube.com/@InOtherWords_speakingclub">YouTube</a> со slow подкастами на английском
+
+📢 Открытый <a href="https://t.me/inotherwords_club">Telegram-канал</a> с важными обновлениями по клубу
 """
 
 REGISTER_START_MSG = """
